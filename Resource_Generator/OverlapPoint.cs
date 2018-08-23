@@ -87,7 +87,7 @@ namespace Resource_Generator
             }
             if (obj is OverlapPoint otherPoint)
             {
-                return this._position.CompareTo(otherPoint._position);
+                return _position.CompareTo(otherPoint._position);
             }
             else
             {

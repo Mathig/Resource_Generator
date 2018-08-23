@@ -187,8 +187,8 @@ namespace Resource_Generator
             SimplePoint.MapSize(inHalfXSize, inYSize);
             _halfMapXSize = inHalfXSize;
             _mapYSize = inYSize;
-            _dTheta = Math.PI / (double)inHalfXSize;
-            _dPhi = Math.PI / (double)inYSize;
+            _dTheta = Math.PI / inHalfXSize;
+            _dPhi = Math.PI / inYSize;
             _phiShift = 0.5 * _dPhi - (Math.PI / 2);
         }
 
@@ -206,7 +206,7 @@ namespace Resource_Generator
             }
             if (obj is BasePoint otherPoint)
             {
-                return this._position.CompareTo(otherPoint._position);
+                return _position.CompareTo(otherPoint._position);
             }
             else
             {
@@ -221,7 +221,7 @@ namespace Resource_Generator
         /// <returns>Distance between the two points.</returns>
         public double Distance(BasePoint iPoint)
         {
-            int xDif = Math.Abs(iPoint.X - this.X);
+            int xDif = Math.Abs(iPoint.X - X);
             if (xDif > _halfMapXSize)
             {
                 xDif = 2 * _halfMapXSize - xDif;
@@ -233,7 +233,7 @@ namespace Resource_Generator
             }
             else
             {
-                cosDif = Math.Cos((double)xDif * _dTheta);
+                cosDif = Math.Cos(xDif * _dTheta);
             }
             return Math.Abs(2 * (1 - _sinPhi * iPoint._sinPhi - _cosPhi * iPoint._cosPhi * cosDif));
         }
@@ -244,7 +244,7 @@ namespace Resource_Generator
         /// <returns>Distance between the two points.</returns>
         public double Distance(double xCoord, double yCoord)
         {
-            double xDif = Math.Abs(xCoord - this.X);
+            double xDif = Math.Abs(xCoord - X);
             if (xDif > _halfMapXSize)
             {
                 xDif = 2 * _halfMapXSize - xDif;
@@ -323,15 +323,15 @@ namespace Resource_Generator
             {
                 rDif = 1;
             }
-            xMin = X - (int)(rDif * (double)_halfMapXSize);
-            xMax = X + (int)(rDif * (double)_halfMapXSize);
+            xMin = X - (int)(rDif * _halfMapXSize);
+            xMax = X + (int)(rDif * _halfMapXSize);
             if (xMin <= 0)
             {
                 xMin += 2 * _halfMapXSize;
                 xMax += 2 * _halfMapXSize;
             }
-            yMin = (int)Math.Floor(zMin * (double)_mapYSize);
-            yMax = (int)Math.Ceiling(zMax * (double)_mapYSize);
+            yMin = (int)Math.Floor(zMin * _mapYSize);
+            yMax = (int)Math.Ceiling(zMax * _mapYSize);
         }
 
         /// <summary>

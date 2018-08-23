@@ -15,6 +15,70 @@ namespace Resource_Generator
         public static string directory;
 
         /// <summary>
+        /// Checks the generation rules to confirm they are valid.
+        /// </summary>
+        /// <param name="rules">Rules to check.</param>
+        /// <returns>True if valid, false otherwise.</returns>
+        private static bool CheckGenerateRules(GenerateRules rules)
+        {
+            try
+            {
+                if (rules.xHalfSize == 0 || rules.ySize == 0 || rules.plateCount == 0)
+                {
+                    Console.WriteLine("Generation Rules file is formatted incorrectly.");
+                    return false;
+                }
+                for (int i = 0; i < rules.magnitude.Length; i++)
+                {
+                    if (rules.radius[i] == 0 || rules.pointConcentration[i] == 0 || rules.magnitude[i] == 0)
+                    {
+                        Console.WriteLine("Generation Rules file is formatted incorrectly.");
+                        return false;
+                    }
+                }
+                if (rules.cutOff == 0)
+                {
+                    Console.WriteLine("Generation Rules file is formatted incorrectly.");
+                    return false;
+                }
+            }
+            catch (NullReferenceException)
+            {
+                Console.WriteLine("Generation Rules file is formatted incorrectly.");
+                return false;
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// Checks the move rules to confirm they are valid.
+        /// </summary>
+        /// <param name="rules">Rules to check.</param>
+        /// <returns>True if valid, false otherwise.</returns>
+        private static bool CheckMoveRules(MoveRules rules)
+        {
+            try
+            {
+                if (rules.xHalfSize == 0 || rules.ySize == 0 || rules.plateCount == 0)
+                {
+                    Console.WriteLine("Generation Rules file is formatted incorrectly.");
+                    return false;
+                }
+                if (rules.timeStep == 0)
+                {
+                    Console.WriteLine("Generation Rules file is formatted incorrectly.");
+                    return false;
+                }
+            }
+            catch (NullReferenceException)
+            {
+                Console.WriteLine("Move Rules file is formatted incorrectly.");
+                return false;
+            }
+            return true;
+        }
+
+        /// <summary>
         /// Loads Plate Generation rules from the input file.
         /// </summary>
         /// <param name="fileName">Rules file location.</param>
@@ -116,33 +180,7 @@ namespace Resource_Generator
                 Console.WriteLine("Generation Rules file is formatted incorrectly.");
                 return false;
             }
-            try
-            {
-                if (rules.xHalfSize == 0 || rules.ySize == 0 || rules.plateCount == 0)
-                {
-                    Console.WriteLine("Generation Rules file is formatted incorrectly.");
-                    return false;
-                }
-                for (int i = 0; i < generationLength; i++)
-                {
-                    if (rules.radius[i] == 0 || rules.pointConcentration[i] == 0 || rules.magnitude[i] == 0)
-                    {
-                        Console.WriteLine("Generation Rules file is formatted incorrectly.");
-                        return false;
-                    }
-                }
-                if (rules.cutOff == 0)
-                {
-                    Console.WriteLine("Generation Rules file is formatted incorrectly.");
-                    return false;
-                }
-            }
-            catch (NullReferenceException)
-            {
-                Console.WriteLine("Generation Rules file is formatted incorrectly.");
-                return false;
-            }
-            return true;
+            return CheckGenerateRules(rules);
         }
 
         /// <summary>
@@ -198,25 +236,7 @@ namespace Resource_Generator
                 Console.WriteLine("Move Rules file is formatted incorrectly.");
                 return false;
             }
-            try
-            {
-                if (rules.xHalfSize == 0 || rules.ySize == 0 || rules.plateCount == 0)
-                {
-                    Console.WriteLine("Generation Rules file is formatted incorrectly.");
-                    return false;
-                }
-                if (rules.timeStep == 0)
-                {
-                    Console.WriteLine("Generation Rules file is formatted incorrectly.");
-                    return false;
-                }
-            }
-            catch (NullReferenceException)
-            {
-                Console.WriteLine("Move Rules file is formatted incorrectly.");
-                return false;
-            }
-            return true;
+            return CheckMoveRules(rules);
         }
     }
 }

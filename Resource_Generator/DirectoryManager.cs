@@ -29,50 +29,6 @@ namespace Resource_Generator
         private const string redirectExtension = "\\DirectoryRedirect.txt";
 
         /// <summary>
-        /// Generates default setting files in directory.
-        /// </summary>
-        /// <param name="directory">Directory to use for creating new files.</param>
-        public static void GenerateDefaultFiles(string directory)
-        {
-            using (StreamWriter file = new StreamWriter(directory + "\\GenerationRules.xml", false))
-            {
-                file.WriteLine("<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"yes\"?>");
-                file.WriteLine("<root>");
-                file.WriteLine("<Handler Generation_Length = \"10\"/>");
-                file.WriteLine("<General Plate_Count = \"10\" X_Half_Size = \"1000\" Y_Size = \"1000\"/>");
-                for (int i = 0; i < 10; i++)
-                {
-                    file.WriteLine("<Magnitude index = \"" + i.ToString() + "\" value = \"" + (16-i).ToString() + "\"/>");
-                    file.WriteLine("<Point_Concentration index = \"" + i.ToString() + "\" value = \"0.999\"/>");
-                    file.WriteLine("<Radius index = \"" + i.ToString() + "\" value = \"" + (Math.Round(Math.Sin(Math.PI * (12 - i) / 120), 2)).ToString() + "\"/>");
-                }
-                file.WriteLine("<Cutoff value = \"" + (1000 * 1000 * 3 / 2).ToString() + "\"/>");
-                file.WriteLine("</root>");
-            }
-            using (StreamWriter file = new StreamWriter(directory + "\\MoveRules.xml", false))
-            {
-                file.WriteLine("<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"yes\"?>");
-                file.WriteLine("<root>");
-                file.WriteLine("<General Plate_Count = \"10\" X_Half_Size = \"1000\" Y_Size = \"1000\"/>");
-                file.WriteLine("<MoveRules Overlap_Factor = \"0.6\" Time_Step = \"1\"/>");
-                file.WriteLine("</root>");
-            }
-            using (StreamWriter file = new StreamWriter(directory + "\\PlateData.xml", false))
-            {
-                file.WriteLine("<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"yes\"?>");
-                file.WriteLine("<root>");
-                file.WriteLine("<Handler Plate_Count = \"10\"/>");
-                for (int i = 0; i < 10; i++)
-                {
-                    double angleOne = i * Math.PI / 4.5;
-                    angleOne = Math.Round(angleOne, 3);
-                    file.WriteLine("<Plate Plate_Index = \"" + i.ToString() + "\" Speed = \"0.02\" DirectionOne = \"" + (angleOne).ToString() + "\" DirectionTwo = \"" + (angleOne).ToString() + "\"/>");
-                }
-                file.WriteLine("</root>");
-            }
-        }
-
-        /// <summary>
         /// Attempts to read the core directory for an existing directory.
         /// </summary>
         /// <param name="coreDirectory">Core directory location.</param>
@@ -95,30 +51,6 @@ namespace Resource_Generator
                 return false;
             }
         }
-        /// <summary>
-        /// Returns the Core Directory, if accessible.
-        /// </summary>
-        /// <param name="directory">Core Directory.</param>
-        /// <returns>True if directory is accessible, false if inaccessible.</returns>
-        public static bool CoreDirectory(out string directory)
-        {
-            directory = Directory.GetCurrentDirectory();
-            return Test(directory);
-        }
-
-
-        /// <summary>
-        /// Saves new directory location in the root directory.
-        /// </summary>
-        /// <param name="coreDirectory">Location of root directory.</param>
-        /// <param name="directory">New directory to store.</param>
-        public static void Save(string coreDirectory, string directory)
-        {
-            using (StreamWriter writer = new StreamWriter(File.Open(coreDirectory + redirectExtension, FileMode.Create)))
-            {
-                writer.WriteLine(directory);
-            }
-        }
 
         /// <summary>
         /// Suggests the user create the directory manually, with instructions.
@@ -132,57 +64,12 @@ namespace Resource_Generator
         }
 
         /// <summary>
-        /// Tests that the given directory is writable.
+        /// Tries to create a directory in the default location.
         /// </summary>
-        /// <param name="directory">Directory path to check.</param>
-        /// <returns>True if writable, false if not writable.</returns>
-        public static bool Test(string directory)
-        {
-            try
-            {
-                using (BinaryWriter writer = new BinaryWriter(File.Open(directory + pingFileName, FileMode.Create)))
-                {
-                    writer.Write(true);
-                }
-                File.Delete(directory + pingFileName);
-                return true;
-            }
-            catch (Exception e) when (e is ArgumentException || e is IOException || e is UnauthorizedAccessException)
-            {
-                return false;
-            }
-        }
-
-        /// <summary>
-        /// Checks if working directory exists, and sets up a new one if not.
-        /// </summary>
-        /// <param name="directory">Directory location.</param>
         /// <returns>True if successful, false otherwise.</returns>
-        public static bool Setup(out string directory)
+        private static bool TryToCreateDefaultDirectory(string coreDirectory, out string directory)
         {
             directory = "";
-            string coreDirectory = "";
-            try
-            {
-                CoreDirectory(out coreDirectory);
-            }
-            catch (Exception e) when (e is ArgumentException || e is IOException || e is UnauthorizedAccessException)
-            {
-                Console.WriteLine("Failed to access core directory.");
-                return false;
-            }
-            if (FindStored(coreDirectory, out directory))
-            {
-                if (Test(directory))
-                {
-                    Console.WriteLine("Directory found: \"" + directory + "\".");
-                    return true;
-                }
-                else
-                {
-                    Console.WriteLine("Directory found at: \"" + directory + "\" is invalid. Creating new directory.");
-                }
-            }
             try
             {
                 directory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
@@ -220,6 +107,129 @@ namespace Resource_Generator
             Console.WriteLine("Directory created at: \"" + directory + "\", but program failed to access it.");
             SuggestManualCreation(coreDirectory);
             return false;
+        }
+
+        /// <summary>
+        /// Returns the Core Directory, if accessible.
+        /// </summary>
+        /// <param name="directory">Core Directory.</param>
+        /// <returns>True if directory is accessible, false if inaccessible.</returns>
+        public static bool CoreDirectory(out string directory)
+        {
+            directory = Directory.GetCurrentDirectory();
+            return Test(directory);
+        }
+
+        /// <summary>
+        /// Generates default setting files in directory.
+        /// </summary>
+        /// <param name="directory">Directory to use for creating new files.</param>
+        public static void GenerateDefaultFiles(string directory)
+        {
+            using (StreamWriter file = new StreamWriter(directory + "\\GenerationRules.xml", false))
+            {
+                file.WriteLine("<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"yes\"?>");
+                file.WriteLine("<root>");
+                file.WriteLine("<Handler Generation_Length = \"10\"/>");
+                file.WriteLine("<General Plate_Count = \"10\" X_Half_Size = \"1000\" Y_Size = \"1000\"/>");
+                for (int i = 0; i < 10; i++)
+                {
+                    file.WriteLine("<Magnitude index = \"" + i.ToString() + "\" value = \"" + (16 - i).ToString() + "\"/>");
+                    file.WriteLine("<Point_Concentration index = \"" + i.ToString() + "\" value = \"0.999\"/>");
+                    file.WriteLine("<Radius index = \"" + i.ToString() + "\" value = \"" + (Math.Round(Math.Sin(Math.PI * (12 - i) / 120), 2)).ToString() + "\"/>");
+                }
+                file.WriteLine("<Cutoff value = \"" + (1000 * 1000 * 3 / 2).ToString() + "\"/>");
+                file.WriteLine("</root>");
+            }
+            using (StreamWriter file = new StreamWriter(directory + "\\MoveRules.xml", false))
+            {
+                file.WriteLine("<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"yes\"?>");
+                file.WriteLine("<root>");
+                file.WriteLine("<General Plate_Count = \"10\" X_Half_Size = \"1000\" Y_Size = \"1000\"/>");
+                file.WriteLine("<MoveRules Overlap_Factor = \"0.6\" Time_Step = \"1\"/>");
+                file.WriteLine("</root>");
+            }
+            using (StreamWriter file = new StreamWriter(directory + "\\PlateData.xml", false))
+            {
+                file.WriteLine("<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"yes\"?>");
+                file.WriteLine("<root>");
+                file.WriteLine("<Handler Plate_Count = \"10\"/>");
+                for (int i = 0; i < 10; i++)
+                {
+                    double angleOne = i * Math.PI / 4.5;
+                    angleOne = Math.Round(angleOne, 3);
+                    file.WriteLine("<Plate Plate_Index = \"" + i.ToString() + "\" Speed = \"0.02\" DirectionOne = \"" + (angleOne).ToString() + "\" DirectionTwo = \"" + (angleOne).ToString() + "\"/>");
+                }
+                file.WriteLine("</root>");
+            }
+        }
+
+        /// <summary>
+        /// Saves new directory location in the root directory.
+        /// </summary>
+        /// <param name="coreDirectory">Location of root directory.</param>
+        /// <param name="directory">New directory to store.</param>
+        public static void Save(string coreDirectory, string directory)
+        {
+            using (StreamWriter writer = new StreamWriter(File.Open(coreDirectory + redirectExtension, FileMode.Create)))
+            {
+                writer.WriteLine(directory);
+            }
+        }
+
+        /// <summary>
+        /// Checks if working directory exists, and sets up a new one if not.
+        /// </summary>
+        /// <param name="directory">Directory location.</param>
+        /// <returns>True if successful, false otherwise.</returns>
+        public static bool Setup(out string directory)
+        {
+            directory = "";
+            string coreDirectory = "";
+            try
+            {
+                CoreDirectory(out coreDirectory);
+            }
+            catch (Exception e) when (e is ArgumentException || e is IOException || e is UnauthorizedAccessException)
+            {
+                Console.WriteLine("Failed to access core directory.");
+                return false;
+            }
+            if (FindStored(coreDirectory, out directory))
+            {
+                if (Test(directory))
+                {
+                    Console.WriteLine("Directory found: \"" + directory + "\".");
+                    return true;
+                }
+                else
+                {
+                    Console.WriteLine("Directory found at: \"" + directory + "\" is invalid. Creating new directory.");
+                }
+            }
+            return TryToCreateDefaultDirectory(coreDirectory, out directory);
+        }
+
+        /// <summary>
+        /// Tests that the given directory is writable.
+        /// </summary>
+        /// <param name="directory">Directory path to check.</param>
+        /// <returns>True if writable, false if not writable.</returns>
+        public static bool Test(string directory)
+        {
+            try
+            {
+                using (BinaryWriter writer = new BinaryWriter(File.Open(directory + pingFileName, FileMode.Create)))
+                {
+                    writer.Write(true);
+                }
+                File.Delete(directory + pingFileName);
+                return true;
+            }
+            catch (Exception e) when (e is ArgumentException || e is IOException || e is UnauthorizedAccessException)
+            {
+                return false;
+            }
         }
     }
 }

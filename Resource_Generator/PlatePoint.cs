@@ -107,7 +107,7 @@ namespace Resource_Generator
             }
             if (obj is PlatePoint otherPoint)
             {
-                return this._point.CompareTo(otherPoint._point);
+                return _point.CompareTo(otherPoint._point);
             }
             else
             {

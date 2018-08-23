@@ -184,7 +184,7 @@ namespace Resource_Generator
                 }
             }
             rawOutput.Sort();
-            return rawOutput;
+            return RefineOverlap(rawOutput);
         }
 
         /// <summary>
@@ -269,50 +269,63 @@ namespace Resource_Generator
         }
 
         /// <summary>
-        /// Corrects to one plate entry for a given point.
+        /// Resolves non-trivial point overlaps.
         /// </summary>
-        /// <param name="input">Input Overlap Point.</param>
-        private static void ResolveOverlap(OverlapPoint input)
+        /// <param name="input">Non-trivial point overlaps to resolve.</param>
+        private static void ResolveNontrivialOverlap(List<OverlapPoint> input)
         {
-            int index = 0;
-            List<int> unTrivialPlates = new List<int>();
-            List<int> unTrivialPoints = new List<int>();
-            for (int i = 1; i < input.plateIndex.Count; i++)
+            foreach (OverlapPoint iPoint in input)
             {
-                if (plates[input.plateIndex[i]].PlatePoints[input.pointIndex[i]].Height != 0)
+                for (int i = 0; i < iPoint.plateIndex.Count; i++)
                 {
-                    if (plates[input.plateIndex[index]].PlatePoints[input.pointIndex[index]].Height != 0)
+                    plates[iPoint.plateIndex[0]].PlatePoints[iPoint.pointIndex[0]].Height += rules.OverlapFactor *
+                        plates[iPoint.plateIndex[i]].PlatePoints[iPoint.pointIndex[i]].Height;
+                    if (i != 0)
                     {
-                        if (unTrivialPlates.Count == 0)
+                        plates[iPoint.plateIndex[i]].PlatePoints.RemoveAt(iPoint.pointIndex[i]);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Resolves trivial overlap points, and condences non-trivial overlap points.
+        /// </summary>
+        /// <param name="rawList">Raw list of overlap points.</param>
+        /// <returns>Non-trivial list of overlap points.</returns>
+        private static List<OverlapPoint> ResolveTrivialOverlap(List<OverlapPoint> input)
+        {
+            List<OverlapPoint> rawOutput = new List<OverlapPoint>();
+            foreach (OverlapPoint iPoint in input)
+            {
+                int index = 0;
+                bool previouslyNontrivial = false;
+                for (int i = 1; i < iPoint.plateIndex.Count; i++)
+                {
+                    if (plates[iPoint.plateIndex[i]].PlatePoints[iPoint.pointIndex[i]].Height != 0)
+                    {
+                        if (plates[iPoint.plateIndex[index]].PlatePoints[iPoint.pointIndex[index]].Height != 0)
                         {
-                            unTrivialPlates.Add(input.plateIndex[index]);
-                            unTrivialPoints.Add(input.pointIndex[index]);
+                            if (!previouslyNontrivial)
+                            {
+                                previouslyNontrivial = true;
+                                rawOutput.Add(new OverlapPoint(iPoint.X, iPoint.Y, iPoint.plateIndex[index], iPoint.pointIndex[index]));
+                            }
+                            rawOutput.Add(new OverlapPoint(iPoint.X, iPoint.Y, iPoint.plateIndex[i], iPoint.pointIndex[i]));
                         }
-                        unTrivialPlates.Add(input.plateIndex[i]);
-                        unTrivialPoints.Add(input.pointIndex[i]);
+                        else
+                        {
+                            plates[iPoint.plateIndex[index]].PlatePoints.RemoveAt(iPoint.pointIndex[index]);
+                            index = i;
+                        }
                     }
                     else
                     {
-                        plates[input.plateIndex[index]].PlatePoints.RemoveAt(input.pointIndex[index]);
-                        index = i;
-                    }
-                }
-                else
-                {
-                    plates[input.plateIndex[i]].PlatePoints.RemoveAt(input.pointIndex[i]);
-                }
-            }
-            if (unTrivialPlates.Count != 0)
-            {
-                for (int i = 0; i < unTrivialPlates.Count; i++)
-                {
-                    plates[unTrivialPlates[0]].PlatePoints[unTrivialPoints[0]].Height += rules.OverlapFactor * plates[unTrivialPlates[i]].PlatePoints[unTrivialPoints[i]].Height;
-                    if (i != 0)
-                    {
-                        plates[unTrivialPoints[i]].PlatePoints.RemoveAt(unTrivialPoints[i]);
+                        plates[iPoint.plateIndex[i]].PlatePoints.RemoveAt(iPoint.pointIndex[i]);
                     }
                 }
             }
+            return RefineOverlap(rawOutput);
         }
 
         /// <summary>
@@ -373,11 +386,8 @@ namespace Resource_Generator
             SecondaryMove();
             ExpandPlates();
             List<OverlapPoint> rawOverlapList = FindRawOverlap();
-            List<OverlapPoint> overlapList = RefineOverlap(rawOverlapList);
-            foreach (OverlapPoint iPoint in overlapList)
-            {
-                ResolveOverlap(iPoint);
-            }
+            List<OverlapPoint> overlapList = ResolveTrivialOverlap(rawOverlapList);
+            ResolveNontrivialOverlap(overlapList);
             return CompileData();
         }
     }

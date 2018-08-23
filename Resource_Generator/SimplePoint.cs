@@ -85,19 +85,19 @@ namespace Resource_Generator
             }
             if (obj is SimplePoint otherPoint)
             {
-                if (this._y > otherPoint._y)
+                if (_y > otherPoint._y)
                 {
                     return 1;
                 }
-                if (this._y < otherPoint._y)
+                if (_y < otherPoint._y)
                 {
                     return -1;
                 }
-                if (this._x > otherPoint._x)
+                if (_x > otherPoint._x)
                 {
                     return 1;
                 }
-                if (this._x < otherPoint._x)
+                if (_x < otherPoint._x)
                 {
                     return -1;
                 }
