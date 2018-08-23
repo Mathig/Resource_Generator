@@ -2,11 +2,16 @@
 
 namespace Resource_Generator
 {
-    class Program
+    internal class Program
     {
-        static void Main(string[] args)
+        /// <summary>
+        /// Entry program loop. Redirects control to CommandController, and allows user to close program at will on crash.
+        /// </summary>
+        private static void Main(string[] args)
         {
-            Console.WriteLine("Hello World!");
+            CommandController.Run();
+            Console.WriteLine("Press any key to close.");
+            Console.ReadKey();
         }
     }
 }
