@@ -289,6 +289,69 @@ namespace Resource_Generator
         }
 
         /// <summary>
+        /// Resolves overlap for non-trivial points at the same plate.
+        /// </summary>
+        /// <param name="input">List of overlap points to analyze.</param>
+        /// <returns>Remaining overlap points.</returns>
+        private static List<OverlapPoint> ResolveSamePlateOverlap(List<OverlapPoint> input)
+        {
+            List<OverlapPoint> output = new List<OverlapPoint>();
+            foreach (OverlapPoint iPoint in input)
+            {
+                List<int> reducedPlates = new List<int>();
+                for (int i = 0; i < rules.plateCount; i++)
+                {
+                    List<int> subIndex = new List<int>();
+                    for (int j = 0; j < iPoint.plateIndex.Count; j++)
+                    {
+                        if (i == iPoint.plateIndex[j])
+                        {
+                            subIndex.Add(j);
+                        }
+                    }
+                    if (subIndex.Count > 1)
+                    {
+                        ResolveSamePlateOverlap(iPoint.pointIndex, i, subIndex);
+                        reducedPlates.Add(i);
+                    }
+                }
+                if (reducedPlates.Count != 0)
+                {
+                    output.Add(iPoint.ReduceOverlapPoint(reducedPlates));
+                }
+                else
+                {
+                    output.Add(new OverlapPoint(iPoint));
+                }
+            }
+            return output;
+        }
+
+        /// <summary>
+        /// Resolves conflict between multiple points on the same plate.
+        /// </summary>
+        /// <param name="pointIndex">Index of points to resolve.</param>
+        /// <param name="plateIndex">Plate in question</param>
+        /// <param name="subIndexes">List of indexes of points to resolve.</param>
+        private static void ResolveSamePlateOverlap(List<int> pointIndex, int plateIndex, List<int> subIndexes)
+        {
+            List<int> newIndices = new List<int>();
+            foreach (int iInt in subIndexes)
+            {
+                newIndices.Add(pointIndex[iInt]);
+            }
+            newIndices.Sort();
+            for (int i = 1; i < subIndexes.Count; i++)
+            {
+                plates[plateIndex].PlatePoints[pointIndex[0]].Height +=
+                    plates[plateIndex].PlatePoints[pointIndex[subIndexes.Count - i]].Height;
+                plates[plateIndex].PlatePoints.RemoveAt(pointIndex[subIndexes.Count - i]);
+            }
+            plates[plateIndex].PlatePoints[pointIndex[0]].Height =
+                (plates[plateIndex].PlatePoints[pointIndex[0]].Height / subIndexes.Count);
+        }
+
+        /// <summary>
         /// Resolves trivial overlap points, and condences non-trivial overlap points.
         /// </summary>
         /// <param name="rawList">Raw list of overlap points.</param>
@@ -387,7 +450,8 @@ namespace Resource_Generator
             ExpandPlates();
             List<OverlapPoint> rawOverlapList = FindRawOverlap();
             List<OverlapPoint> overlapList = ResolveTrivialOverlap(rawOverlapList);
-            ResolveNontrivialOverlap(overlapList);
+            List<OverlapPoint> finalOverlapList = ResolveSamePlateOverlap(overlapList);
+            ResolveNontrivialOverlap(finalOverlapList);
             return CompileData();
         }
     }

@@ -40,6 +40,39 @@ namespace Resource_Generator
         }
 
         /// <summary>
+        /// Constructor that sets the position and initial indexes.
+        /// </summary>
+        /// <param name="inX">X Coordinate of point.</param>
+        /// <param name="inY">Y Coordinate of point.</param>
+        /// <param name="inPlateIndex">Plate index.</param>
+        /// <param name="inPointIndex">Point index.</param>
+        public OverlapPoint(int inX, int inY, List<int> inPlateIndex, List<int> inPointIndex)
+        {
+            _position = new SimplePoint(inX, inY);
+            plateIndex = inPlateIndex;
+            pointIndex = inPointIndex;
+        }
+
+        /// <summary>
+        /// Constructor that sets the position and initial indexes.
+        /// </summary>
+        /// <param name="inPoint">Input Overlap Point to copy.</param>
+        public OverlapPoint(OverlapPoint inPoint)
+        {
+            _position = new SimplePoint(inPoint.X, inPoint.Y);
+            plateIndex = new List<int>();
+            pointIndex = new List<int>();
+            foreach (int iInt in inPoint.plateIndex)
+            {
+                plateIndex.Add(iInt);
+            }
+            foreach (int iInt in inPoint.pointIndex)
+            {
+                pointIndex.Add(iInt);
+            }
+        }
+
+        /// <summary>
         /// Constructor that sets the position and initial index.
         /// </summary>
         /// <param name="inPoint">Coordinates of point.</param>
@@ -113,6 +146,42 @@ namespace Resource_Generator
         public void FindLeftRightPoints(out SimplePoint leftPoint, out SimplePoint rightPoint)
         {
             _position.FindLeftRightPoints(out leftPoint, out rightPoint);
+        }
+
+        /// <summary>
+        /// Reduces this overlap point to not include duplicate points on the same plate.
+        /// </summary>
+        /// <param name="reducedPlates">Plates with duplicate points.</param>
+        /// <returns>Reduced Overlap Point.</returns>
+        public OverlapPoint ReduceOverlapPoint(List<int> reducedPlates)
+        {
+            List<int> outPlates = new List<int>();
+            List<int> outPoints = new List<int>();
+            bool[] firstPoints = new bool[reducedPlates.Count];
+            for (int i = 0; i < plateIndex.Count; i++)
+            {
+                bool notSame = true;
+                for (int j = 0; j < reducedPlates.Count; j++)
+                {
+                    if (reducedPlates[j] == plateIndex[i])
+                    {
+                        if (!firstPoints[j])
+                        {
+                            firstPoints[j] = true;
+                            outPlates.Add(plateIndex[i]);
+                            outPoints.Add(pointIndex[i]);
+                        }
+                        notSame = false;
+                        break;
+                    }
+                }
+                if (notSame)
+                {
+                    outPlates.Add(plateIndex[i]);
+                    outPoints.Add(pointIndex[i]);
+                }
+            }
+            return new OverlapPoint(X, Y, outPlates, outPoints);
         }
     }
 }
