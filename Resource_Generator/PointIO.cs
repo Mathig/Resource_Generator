@@ -1,6 +1,7 @@
 ﻿using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 
@@ -201,6 +202,56 @@ namespace Resource_Generator
                 }
             }
             return true;
+        }
+
+        /// <summary>
+        /// Opens an image file and returns rules for handling the data and the data.
+        /// </summary>
+        /// <param name="fileName">File to open.</param>
+        /// <param name="data">Data to retrieve.</param>
+        /// <param name="rules">Rules for how the data is processed.</param>
+        /// <returns>True if successful, false otherwise.</returns>
+        public static bool OpenPointImage(string fileName, out PlatePoint[,] data, out GeneralRules rules)
+        {
+            rules = new GeneralRules();
+            try
+            {
+                using (Image<Rgba32> image = Image.Load(directory + "\\" + fileName + ".png"))
+                {
+                    rules.xHalfSize = (int)(0.5 * image.Width);
+                    rules.ySize = image.Height;
+                    data = new PlatePoint[image.Width, image.Height];
+                    List<Rgba32> colorList = new List<Rgba32>();
+                    for (int x = 0; x < image.Width; x++)
+                    {
+                        for (int y = 0; y < image.Height; y++)
+                        {
+                            bool foundColor = false;
+                            for (int c = 0; c < colorList.Count; c++)
+                            {
+                                if (colorList[c] == image[x, y])
+                                {
+                                    data[x, y] = new PlatePoint(x, y, c);
+                                    foundColor = true;
+                                    break;
+                                }
+                            }
+                            if (!foundColor)
+                            {
+                                colorList.Add(image[x, y]);
+                                data[x, y] = new PlatePoint(x, y, colorList.Count - 1);
+                            }
+                        }
+                    }
+                    rules.plateCount = colorList.Count;
+                }
+                return true;
+            }
+            catch (Exception e) when (e is FileNotFoundException || e is NullReferenceException || e is EndOfStreamException)
+            {
+                data = null;
+                return false;
+            }
         }
 
         /// <summary>

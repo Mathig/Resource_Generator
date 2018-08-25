@@ -28,6 +28,10 @@ namespace Resource_Generator
                 string newCommand = Console.ReadLine();
                 switch (newCommand)
                 {
+                    case "Copy Plates":
+                        closeProgram = !CopyPlates();
+                        break;
+
                     case "Generate Plates":
                         closeProgram = !GeneratePlates();
                         break;
@@ -53,6 +57,35 @@ namespace Resource_Generator
                         break;
                 }
             }
+        }
+
+        /// <summary>
+        /// Copies an image plate file into a data file.
+        /// </summary>
+        /// <returns>True if successful, false otherwise.</returns>
+        private static bool CopyPlates()
+        {
+            Console.WriteLine("Input Plate image file name.");
+            FileName image = new FileName(Console.ReadLine());
+            if (!image.IsValid())
+            {
+                Console.WriteLine("File name is invalid. " + validFileNameCriteria);
+                return false;
+            }
+            Console.WriteLine("Input Plate data file name.");
+            FileName dataFile = new FileName(Console.ReadLine());
+            if (!dataFile.IsValid())
+            {
+                Console.WriteLine("File name is invalid. " + validFileNameCriteria);
+                return false;
+            }
+            if (!PointIO.OpenPointImage(image.name, out PlatePoint[,] data, out GeneralRules rules))
+            {
+                Console.WriteLine("Image file is corrupted.");
+                return false;
+            }
+            PointIO.SavePointData(dataFile.name, rules, data);
+            return true;
         }
 
         /// <summary>
@@ -100,6 +133,7 @@ namespace Resource_Generator
         {
             Console.WriteLine("Possible commands include:");
             Console.WriteLine("Help: Lists possible commands.");
+            Console.WriteLine("Copy Plates: Converts an image file of data to a binary data file.");
             Console.WriteLine("Move Directory: Moves the directory.");
             Console.WriteLine("Move Plates: Moves the Plates.");
             Console.WriteLine("Generate Plates: Generates the Plates");
