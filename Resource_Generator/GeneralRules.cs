@@ -6,6 +6,16 @@
     internal class GeneralRules
     {
         /// <summary>
+        /// Current Time.
+        /// </summary>
+        public int currentTime;
+
+        /// <summary>
+        /// Max convergent buildup.
+        /// </summary>
+        public int maxBuildup;
+
+        /// <summary>
         /// Number of plates.
         /// </summary>
         public int plateCount;

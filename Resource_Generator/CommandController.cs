@@ -79,12 +79,12 @@ namespace Resource_Generator
                 Console.WriteLine("File name is invalid. " + validFileNameCriteria);
                 return false;
             }
-            if (!PointIO.OpenPointImage(image.name, out PlatePoint[,] data, out GeneralRules rules))
+            if (!PointIO.OpenPointImage(image.name, out int[,] data))
             {
                 Console.WriteLine("Image file is corrupted.");
                 return false;
             }
-            PointIO.SavePointData(dataFile.name, rules, data);
+            PointIO.SavePointPlateData(dataFile.name, data);
             return true;
         }
 

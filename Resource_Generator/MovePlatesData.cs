@@ -8,6 +8,16 @@ namespace Resource_Generator
     internal static class MovePlatesData
     {
         /// <summary>
+        /// List of new continental collision data.
+        /// </summary>
+        private static int[,] newContinentalCollision;
+
+        /// <summary>
+        /// List of new oceanic collision data.
+        /// </summary>
+        private static int[,] newOceanicCollision;
+
+        /// <summary>
         /// Contains all the plates on the map, within their associated plate.
         /// </summary>
         private static Plate[] plates;
@@ -18,29 +28,14 @@ namespace Resource_Generator
         private static bool[,] pointActives;
 
         /// <summary>
-        /// Contains height of points.
+        /// Contains history of each point.
         /// </summary>
-        private static double[,] pointHeights;
-
-        /// <summary>
-        /// Stores which plate a point was previously part of.
-        /// </summary>
-        private static int[,] pointPastPlates;
+        private static PlatePoint[,] pointHistories;
 
         /// <summary>
         /// Rules that define plate movement.
         /// </summary>
         private static MoveRules rules;
-
-        /// <summary>
-        /// Adds new point to matrix based on potential rules.
-        /// </summary>
-        /// <param name="plateIndex">Index of plate that point belongs to.</param>
-        /// <param name="point">Point location.</param>
-        private static void AddNewPoint(int plateIndex, SimplePoint point)
-        {
-            plates[plateIndex].PlatePoints.Add(new PlatePoint(point, plateIndex));
-        }
 
         /// <summary>
         /// Calculates the average height of adjacent points in <see cref="pointHeights"/>.
@@ -50,7 +45,7 @@ namespace Resource_Generator
         /// <param name="inPlate">Index of plate to scan for with <see cref="pointPastPlates"/>.</param>
         /// <param name="angle">Angle of motion.</param>
         /// <returns>Average of nearby points from <see cref="PastHeights"/>.</returns>
-        private static double AdjacentHeightAverage(int inPlate, BasePoint originalPoint, SimplePoint reversedPoint, double[] angle)
+        private static PlatePoint AdjacentAverage(int inPlate, BasePoint originalPoint, SimplePoint reversedPoint, double[] angle)
         {
             originalPoint.GridTransform(angle, out double xCoord, out double yCoord);
             SimplePoint[] potentialNeighbors = new SimplePoint[8];
@@ -58,19 +53,16 @@ namespace Resource_Generator
             reversedPoint.FindLeftRightPoints(out potentialNeighbors[2], out potentialNeighbors[3]);
             potentialNeighbors[0].FindLeftRightPoints(out potentialNeighbors[4], out potentialNeighbors[5]);
             potentialNeighbors[1].FindLeftRightPoints(out potentialNeighbors[6], out potentialNeighbors[7]);
-            double average = 0;
-            double weight = 0;
+            List<PlatePoint> pointList = new List<PlatePoint>();
             foreach (SimplePoint iPoint in potentialNeighbors)
             {
-                if (pointPastPlates[iPoint.X, iPoint.Y] == inPlate && pointHeights[iPoint.X, iPoint.Y] != 0)
+                if (pointHistories[iPoint.X, iPoint.Y].PlateNumber == inPlate)
                 {
-                    BasePoint tempPoint = new BasePoint(iPoint);
-                    double iWeight = 1 / (tempPoint.Distance(xCoord, yCoord));
-                    average += iWeight * pointHeights[iPoint.X, iPoint.Y];
-                    weight += iWeight;
+                    pointList.Add(pointHistories[iPoint.X, iPoint.Y]);
                 }
             }
-            return (average / weight);
+            SimplePoint newPosition = new SimplePoint(originalPoint.X, originalPoint.Y);
+            return PlatePoint.ResolveSamePlateNeighbors(pointList, xCoord, yCoord, newPosition, inPlate);
         }
 
         /// <summary>
@@ -84,7 +76,17 @@ namespace Resource_Generator
             {
                 foreach (PlatePoint iPoint in plates[i].PlatePoints)
                 {
-                    output[iPoint.X, iPoint.Y] = new PlatePoint(iPoint);
+                    output[iPoint.X, iPoint.Y] = iPoint;
+                    if (newContinentalCollision[iPoint.X, iPoint.Y] != 0)
+                    {
+                        iPoint.History.ContinentalBuildup += newContinentalCollision[iPoint.X, iPoint.Y];
+                        iPoint.History.ContinentalRecency = rules.currentTime;
+                    }
+                    if (newOceanicCollision[iPoint.X, iPoint.Y] != 0)
+                    {
+                        iPoint.History.OceanicBuildup += newOceanicCollision[iPoint.X, iPoint.Y];
+                        iPoint.History.OceanicRecency = rules.currentTime;
+                    }
                 }
             });
             return output;
@@ -97,13 +99,41 @@ namespace Resource_Generator
         {
             BasePoint.MapSetup(rules.xHalfSize, rules.ySize);
             pointActives = new bool[2 * rules.xHalfSize, rules.ySize];
-            pointHeights = new double[2 * rules.xHalfSize, rules.ySize];
-            pointPastPlates = new int[2 * rules.xHalfSize, rules.ySize];
+            pointHistories = new PlatePoint[2 * rules.xHalfSize, rules.ySize];
+            newContinentalCollision = new int[2 * rules.xHalfSize, rules.ySize];
+            newOceanicCollision = new int[2 * rules.xHalfSize, rules.ySize];
             plates = new Plate[rules.plateCount];
             for (int i = 0; i < rules.plateCount; i++)
             {
                 plates[i] = new Plate();
             }
+        }
+
+        /// <summary>
+        /// Modifies a point by a continental convergent event.
+        /// </summary>
+        /// <param name="triggerPoint">The point which called the event.</param>
+        /// <param name="changedPoint">The point to be affected.</param>
+        private static void ContinentalConvergent(BasePoint triggerPoint, BasePoint changedPoint)
+        {
+            newContinentalCollision[changedPoint.X, changedPoint.Y] += 1;
+        }
+
+        /// <summary>
+        /// Processes a continental point which is at a convergent boundary.
+        /// </summary>
+        /// <param name="iPoint">Point in question.</param>
+        /// <param name="index">Index of point.</param>
+        private static void ContinentalConvergent(OverlapPoint overlapPoint, int index)
+        {
+            BasePoint triggerPoint = new BasePoint(overlapPoint.X, overlapPoint.Y);
+            BasePoint borderPoint = FindBorderPoint(triggerPoint, overlapPoint.plateIndex[index]);
+            List<BasePoint> affectedPoints = FindAffectedPoints(borderPoint, overlapPoint.plateIndex[index]);
+            foreach (BasePoint iPoint in affectedPoints)
+            {
+                ContinentalConvergent(triggerPoint, iPoint);
+            }
+            RemovePoint(triggerPoint, overlapPoint.plateIndex[index]);
         }
 
         /// <summary>
@@ -134,11 +164,10 @@ namespace Resource_Generator
                 if (!pointActives[borderPoint.X, borderPoint.Y])
                 {
                     pointActives[borderPoint.X, borderPoint.Y] = true;
-                    SimplePoint oldPoint = new SimplePoint(borderPoint.X, borderPoint.Y);
-                    AddNewPoint(borderPoint.plateIndex[0], oldPoint);
+                    plates[borderPoint.plateIndex[0]].PlatePoints.Add(new PlatePoint(borderPoint, rules.currentTime));
                     SimplePoint[] newPointsP = new SimplePoint[4];
-                    oldPoint.FindLeftRightPoints(out newPointsP[0], out newPointsP[1]);
-                    oldPoint.FindAboveBelowPoints(out newPointsP[2], out newPointsP[3]);
+                    borderPoint.FindLeftRightPoints(out newPointsP[0], out newPointsP[1]);
+                    borderPoint.FindAboveBelowPoints(out newPointsP[2], out newPointsP[3]);
                     for (int k = 0; k < 4; k++)
                     {
                         if (!pointActives[newPointsP[k].X, newPointsP[k].Y])
@@ -149,6 +178,30 @@ namespace Resource_Generator
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Finds all the points affected by the convergent boundary.
+        /// </summary>
+        /// <param name="triggerPoint">Border point to start search from.</param>
+        /// <param name="plateIndex">Plate to search on.</param>
+        /// <returns>Affected points.</returns>
+        private static List<BasePoint> FindAffectedPoints(BasePoint triggerPoint, int plateIndex)
+        {
+            List<BasePoint> list = new List<BasePoint>();
+            list.Add(triggerPoint);
+            return list;
+        }
+
+        /// <summary>
+        /// Finds the closest border point to the triggered point.
+        /// </summary>
+        /// <param name="triggerPoint">Triggered point to start search from.</param>
+        /// <param name="plateIndex">Plate to search on.</param>
+        /// <returns>Border point.</returns>
+        private static BasePoint FindBorderPoint(BasePoint triggerPoint, int plateIndex)
+        {
+            return triggerPoint;
         }
 
         /// <summary>
@@ -179,11 +232,10 @@ namespace Resource_Generator
                 {
                     if (ActivePointsTwo[plates[i].PlatePoints[j].X, plates[i].PlatePoints[j].Y])
                     {
-                        rawOutput.Add(new OverlapPoint(plates[i].PlatePoints[j].X, plates[i].PlatePoints[j].Y, i, j));
+                        rawOutput.Add(new OverlapPoint(plates[i].PlatePoints[j]));
                     }
                 }
             }
-            rawOutput.Sort();
             return RefineOverlap(rawOutput);
         }
 
@@ -197,16 +249,37 @@ namespace Resource_Generator
                 double[] angle = new double[3] { plates[i].Direction[0], plates[i].Direction[1], rules.timeStep * plates[i].Speed };
                 for (int j = 0; j < plates[i].PlatePoints.Count; j++)
                 {
-                    plates[i].PlatePoints[j] = new PlatePoint(plates[i].PlatePoints[j].Transform(angle), i, plates[i].PlatePoints[j].Height);
+                    plates[i].PlatePoints[j].Transform(angle);
+                    pointActives[plates[i].PlatePoints[j].X, plates[i].PlatePoints[j].Y] = true;
                 }
             });
-            Parallel.For(0, rules.plateCount, (i) =>
+        }
+
+        /// <summary>
+        /// Processes an oceanic point which is at a convergent boundary.
+        /// </summary>
+        /// <param name="iPoint">Point in question.</param>
+        /// <param name="index">Index of point.</param>
+        private static void OceanicConvergent(OverlapPoint overlapPoint, int index)
+        {
+            BasePoint triggerPoint = new BasePoint(overlapPoint.X, overlapPoint.Y);
+            BasePoint borderPoint = FindBorderPoint(triggerPoint, overlapPoint.plateIndex[index]);
+            List<BasePoint> affectedPoints = FindAffectedPoints(borderPoint, overlapPoint.plateIndex[index]);
+            foreach (BasePoint iPoint in affectedPoints)
             {
-                foreach (PlatePoint iPoint in plates[i].PlatePoints)
-                {
-                    pointActives[iPoint.X, iPoint.Y] = true;
-                }
-            });
+                OceanicConvergent(triggerPoint, iPoint);
+            }
+            RemovePoint(triggerPoint, overlapPoint.plateIndex[index]);
+        }
+
+        /// <summary>
+        /// Modifies a point by an oceanic convergent event.
+        /// </summary>
+        /// <param name="triggerPoint">The point which called the event.</param>
+        /// <param name="changedPoint">The point to be affected.</param>
+        private static void OceanicConvergent(BasePoint triggerPoint, BasePoint changedPoint)
+        {
+            newOceanicCollision[changedPoint.X, changedPoint.Y] += 1;
         }
 
         /// <summary>
@@ -228,7 +301,7 @@ namespace Resource_Generator
         }
 
         /// <summary>
-        /// Inputs data to set up <see cref="pointHeights"/>, and <see cref="pointPastPlates"/>.
+        /// Inputs data to set up <see cref="pointHistories"/>.
         /// </summary>
         /// <param name="points">Plate points to input.</param>
         private static void PointInput(PlatePoint[,] points)
@@ -237,8 +310,7 @@ namespace Resource_Generator
             {
                 foreach (PlatePoint iPoint in plates[i].PlatePoints)
                 {
-                    pointHeights[iPoint.X, iPoint.Y] = iPoint.Height;
-                    pointPastPlates[iPoint.X, iPoint.Y] = iPoint.PlateNumber;
+                    pointHistories[iPoint.X, iPoint.Y] = new PlatePoint(iPoint);
                 }
             });
         }
@@ -250,6 +322,7 @@ namespace Resource_Generator
         /// <returns>List of <see cref="OverlapPoint"/>.</returns>
         private static List<OverlapPoint> RefineOverlap(List<OverlapPoint> rawList)
         {
+            rawList.Sort();
             List<OverlapPoint> output = new List<OverlapPoint>();
             int index = 0;
             for (int i = 1; i < rawList.Count; i++)
@@ -257,7 +330,7 @@ namespace Resource_Generator
                 if (rawList[i - 1].CompareTo(rawList[i]) == 0)
                 {
                     rawList[index].plateIndex.Add(rawList[i].plateIndex[0]);
-                    rawList[index].pointIndex.Add(rawList[i].pointIndex[0]);
+                    rawList[index].isContinentalIndex.Add(rawList[i].isContinentalIndex[0]);
                 }
                 else
                 {
@@ -265,130 +338,103 @@ namespace Resource_Generator
                     index = i;
                 }
             }
+            output.Add(rawList[index]);
             return output;
+        }
+
+        /// <summary>
+        /// Removes the given point from the Plates matrix given the plate index.
+        /// </summary>
+        /// <param name="doomedPoint">Point to remove.</param>
+        /// <param name="plateIndex">Plate index of the point.</param>
+        private static void RemovePoint(BasePoint doomedPoint, int plateIndex)
+        {
+            PlatePoint tempPoint = new PlatePoint(new SimplePoint(doomedPoint.X, doomedPoint.Y));
+            for (int i = 0; i < plates[plateIndex].PlatePoints.Count; i++)
+            {
+                if (tempPoint.CompareTo(plates[plateIndex].PlatePoints[i]) == 0)
+                {
+                    plates[plateIndex].PlatePoints.RemoveAt(i);
+                    return;
+                }
+            }
         }
 
         /// <summary>
         /// Resolves non-trivial point overlaps.
         /// </summary>
-        /// <param name="input">Non-trivial point overlaps to resolve.</param>
-        private static void ResolveNontrivialOverlap(List<OverlapPoint> input)
+        /// <param name="input">Point overlaps to resolve.</param>
+        private static void ResolveOtherOverlap(List<OverlapPoint> input)
         {
             foreach (OverlapPoint iPoint in input)
             {
-                for (int i = 0; i < iPoint.plateIndex.Count; i++)
+                if (iPoint.IsOceanicOnly(out int firstContinental))
                 {
-                    plates[iPoint.plateIndex[0]].PlatePoints[iPoint.pointIndex[0]].Height += rules.OverlapFactor *
-                        plates[iPoint.plateIndex[i]].PlatePoints[iPoint.pointIndex[i]].Height;
-                    if (i != 0)
+                    for (int i = 1; i < iPoint.plateIndex.Count; i++)
                     {
-                        plates[iPoint.plateIndex[i]].PlatePoints.RemoveAt(iPoint.pointIndex[i]);
+                        OceanicConvergent(iPoint, i);
                     }
-                }
-            }
-        }
-
-        /// <summary>
-        /// Resolves overlap for non-trivial points at the same plate.
-        /// </summary>
-        /// <param name="input">List of overlap points to analyze.</param>
-        /// <returns>Remaining overlap points.</returns>
-        private static List<OverlapPoint> ResolveSamePlateOverlap(List<OverlapPoint> input)
-        {
-            List<OverlapPoint> output = new List<OverlapPoint>();
-            foreach (OverlapPoint iPoint in input)
-            {
-                List<int> reducedPlates = new List<int>();
-                for (int i = 0; i < rules.plateCount; i++)
-                {
-                    List<int> subIndex = new List<int>();
-                    for (int j = 0; j < iPoint.plateIndex.Count; j++)
-                    {
-                        if (i == iPoint.plateIndex[j])
-                        {
-                            subIndex.Add(j);
-                        }
-                    }
-                    if (subIndex.Count > 1)
-                    {
-                        ResolveSamePlateOverlap(iPoint.pointIndex, i, subIndex);
-                        reducedPlates.Add(i);
-                    }
-                }
-                if (reducedPlates.Count != 0)
-                {
-                    output.Add(iPoint.ReduceOverlapPoint(reducedPlates));
                 }
                 else
                 {
-                    output.Add(new OverlapPoint(iPoint));
+                    for (int i = 0; i < iPoint.plateIndex.Count; i++)
+                    {
+                        if (firstContinental != i)
+                        {
+                            if (!iPoint.isContinentalIndex[i])
+                            {
+                                OceanicConvergent(iPoint, i);
+                            }
+                            else
+                            {
+                                ContinentalConvergent(iPoint, i);
+                            }
+                        }
+                    }
                 }
             }
-            return output;
         }
 
         /// <summary>
-        /// Resolves conflict between multiple points on the same plate.
+        /// Finds all points with two or more entries in the same plate and resolves the overlap.
         /// </summary>
-        /// <param name="pointIndex">Index of points to resolve.</param>
-        /// <param name="plateIndex">Plate in question</param>
-        /// <param name="subIndexes">List of indexes of points to resolve.</param>
-        private static void ResolveSamePlateOverlap(List<int> pointIndex, int plateIndex, List<int> subIndexes)
+        private static void ResolveSameOverlap()
         {
-            List<int> newIndices = new List<int>();
-            foreach (int iInt in subIndexes)
+            Parallel.For(0, rules.plateCount, (i) =>
             {
-                newIndices.Add(pointIndex[iInt]);
-            }
-            newIndices.Sort();
-            for (int i = 1; i < subIndexes.Count; i++)
-            {
-                plates[plateIndex].PlatePoints[pointIndex[0]].Height +=
-                    plates[plateIndex].PlatePoints[pointIndex[subIndexes.Count - i]].Height;
-                plates[plateIndex].PlatePoints.RemoveAt(pointIndex[subIndexes.Count - i]);
-            }
-            plates[plateIndex].PlatePoints[pointIndex[0]].Height =
-                (plates[plateIndex].PlatePoints[pointIndex[0]].Height / subIndexes.Count);
-        }
-
-        /// <summary>
-        /// Resolves trivial overlap points, and condences non-trivial overlap points.
-        /// </summary>
-        /// <param name="rawList">Raw list of overlap points.</param>
-        /// <returns>Non-trivial list of overlap points.</returns>
-        private static List<OverlapPoint> ResolveTrivialOverlap(List<OverlapPoint> input)
-        {
-            List<OverlapPoint> rawOutput = new List<OverlapPoint>();
-            foreach (OverlapPoint iPoint in input)
-            {
-                int index = 0;
-                bool previouslyNontrivial = false;
-                for (int i = 1; i < iPoint.plateIndex.Count; i++)
+                plates[i].PlatePoints.Sort();
+                int indexA = 0;
+                int indexB = 1;
+                while (indexB < plates[i].PlatePoints.Count)
                 {
-                    if (plates[iPoint.plateIndex[i]].PlatePoints[iPoint.pointIndex[i]].Height != 0)
+                    if (plates[i].PlatePoints[indexA].CompareTo(plates[i].PlatePoints[indexB]) == 0)
                     {
-                        if (plates[iPoint.plateIndex[index]].PlatePoints[iPoint.pointIndex[index]].Height != 0)
+                        List<PlatePoint> samePoints = new List<PlatePoint>();
+                        samePoints.Add(plates[i].PlatePoints[indexB]);
+                        for (int j = indexB + 1; j < plates[i].PlatePoints.Count; j++)
                         {
-                            if (!previouslyNontrivial)
+                            if (plates[i].PlatePoints[indexA].CompareTo(plates[i].PlatePoints[j]) == 0)
                             {
-                                previouslyNontrivial = true;
-                                rawOutput.Add(new OverlapPoint(iPoint.X, iPoint.Y, iPoint.plateIndex[index], iPoint.pointIndex[index]));
+                                samePoints.Add(plates[i].PlatePoints[j]);
                             }
-                            rawOutput.Add(new OverlapPoint(iPoint.X, iPoint.Y, iPoint.plateIndex[i], iPoint.pointIndex[i]));
+                            else
+                            {
+                                break;
+                            }
                         }
-                        else
+                        plates[i].PlatePoints[indexA].ResolveSamePlateOverlap(samePoints);
+                        for (int j = 1; j < samePoints.Count; j++)
                         {
-                            plates[iPoint.plateIndex[index]].PlatePoints.RemoveAt(iPoint.pointIndex[index]);
-                            index = i;
+                            plates[i].PlatePoints.RemoveAt(samePoints.Count - j);
                         }
                     }
                     else
                     {
-                        plates[iPoint.plateIndex[i]].PlatePoints.RemoveAt(iPoint.pointIndex[i]);
+                        indexA = indexB;
+                        indexB++;
                     }
                 }
-            }
-            return RefineOverlap(rawOutput);
+            });
         }
 
         /// <summary>
@@ -405,10 +451,9 @@ namespace Resource_Generator
                     plates[i].Direction[0], plates[i].Direction[1], -1 * plates[i].Speed * rules.timeStep
                 };
                 SimplePoint reversedPoint = input.Transform(angle);
-                if (pointPastPlates[reversedPoint.X, reversedPoint.Y] == i)
+                if (pointHistories[reversedPoint.X, reversedPoint.Y].PlateNumber == i)
                 {
-                    double average = AdjacentHeightAverage(i, input, reversedPoint, angle);
-                    plates[i].PlatePoints.Add(new PlatePoint(input, average));
+                    plates[i].PlatePoints.Add(AdjacentAverage(i, input, reversedPoint, angle));
                     pointActives[input.X, input.Y] = true;
                 }
             }
@@ -448,10 +493,8 @@ namespace Resource_Generator
             InitialMove();
             SecondaryMove();
             ExpandPlates();
-            List<OverlapPoint> rawOverlapList = FindRawOverlap();
-            List<OverlapPoint> overlapList = ResolveTrivialOverlap(rawOverlapList);
-            List<OverlapPoint> finalOverlapList = ResolveSamePlateOverlap(overlapList);
-            ResolveNontrivialOverlap(finalOverlapList);
+            ResolveSameOverlap();
+            ResolveOtherOverlap(FindRawOverlap());
             return CompileData();
         }
     }

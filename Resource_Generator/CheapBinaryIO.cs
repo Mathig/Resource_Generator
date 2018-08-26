@@ -67,37 +67,6 @@ namespace Resource_Generator
         }
 
         /// <summary>
-        /// Reads binary data from file.
-        /// </summary>
-        /// <param name="fileName">File to read from.</param>
-        /// <param name="xSize">Width of data array.</param>
-        /// <param name="ySize">Height of data array.</param>
-        /// <param name="data">Data to read.</param>
-        /// <returns>True if successful, otherwise false.</returns>
-        private static bool ReadBinary(string fileName, int xSize, int ySize, out bool[,] data)
-        {
-            data = new bool[xSize, ySize];
-            try
-            {
-                using (BinaryReader reader = new BinaryReader(File.Open(fileName, FileMode.Open)))
-                {
-                    for (int x = 0; x < xSize; x++)
-                    {
-                        for (int y = 0; y < ySize; y++)
-                        {
-                            data[x, y] = reader.ReadBoolean();
-                        }
-                    }
-                }
-                return true;
-            }
-            catch (Exception e) when (e is FileNotFoundException || e is NullReferenceException || e is EndOfStreamException)
-            {
-                return false;
-            }
-        }
-
-        /// <summary>
         /// Reads byte data from file.
         /// </summary>
         /// <param name="fileName">File to read from.</param>
@@ -270,22 +239,6 @@ namespace Resource_Generator
         }
 
         /// <summary>
-        /// Writes data to file, as binary.
-        /// </summary>
-        /// <param name="fileName">File to write to.</param>
-        /// <param name="data">Data to store.</param>
-        private static void WriteBinary(string fileName, bool[,] data)
-        {
-            using (BinaryWriter writer = new BinaryWriter(File.Open(fileName, FileMode.Create)))
-            {
-                foreach (bool iData in data)
-                {
-                    writer.Write(iData);
-                }
-            }
-        }
-
-        /// <summary>
         /// Writes data to file, as byte.
         /// </summary>
         /// <param name="fileName">File to write to.</param>
@@ -370,6 +323,37 @@ namespace Resource_Generator
         }
 
         /// <summary>
+        /// Reads binary data from file.
+        /// </summary>
+        /// <param name="fileName">File to read from.</param>
+        /// <param name="xSize">Width of data array.</param>
+        /// <param name="ySize">Height of data array.</param>
+        /// <param name="data">Data to read.</param>
+        /// <returns>True if successful, otherwise false.</returns>
+        public static bool ReadBinary(string fileName, int xSize, int ySize, out bool[,] data)
+        {
+            data = new bool[xSize, ySize];
+            try
+            {
+                using (BinaryReader reader = new BinaryReader(File.Open(fileName, FileMode.Open)))
+                {
+                    for (int x = 0; x < xSize; x++)
+                    {
+                        for (int y = 0; y < ySize; y++)
+                        {
+                            data[x, y] = reader.ReadBoolean();
+                        }
+                    }
+                }
+                return true;
+            }
+            catch (Exception e) when (e is FileNotFoundException || e is NullReferenceException || e is EndOfStreamException)
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
         /// Writes to a file using a compressed binary format, based on the max value of the data.
         /// </summary>
         /// <param name="filePath">Full file path to save to.</param>
@@ -395,6 +379,22 @@ namespace Resource_Generator
                 case 32:
                     WriteInt(filePath, data);
                     break;
+            }
+        }
+
+        /// <summary>
+        /// Writes data to file, as binary.
+        /// </summary>
+        /// <param name="fileName">File to write to.</param>
+        /// <param name="data">Data to store.</param>
+        public static void WriteBinary(string fileName, bool[,] data)
+        {
+            using (BinaryWriter writer = new BinaryWriter(File.Open(fileName, FileMode.Create)))
+            {
+                foreach (bool iData in data)
+                {
+                    writer.Write(iData);
+                }
             }
         }
     }

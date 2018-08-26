@@ -110,6 +110,8 @@ namespace Resource_Generator
                             rules.plateCount = int.Parse(reader.GetAttribute("Plate_Count"));
                             rules.xHalfSize = int.Parse(reader.GetAttribute("X_Half_Size"));
                             rules.ySize = int.Parse(reader.GetAttribute("Y_Size"));
+                            rules.currentTime = int.Parse(reader.GetAttribute("Current_Time"));
+                            rules.maxBuildup = int.Parse(reader.GetAttribute("Max_Buildup"));
                         }
                     }
                     if (reader.NodeType == XmlNodeType.Element && reader.Name == "Magnitude")
@@ -204,6 +206,8 @@ namespace Resource_Generator
                             rules.plateCount = int.Parse(reader.GetAttribute("Plate_Count"));
                             rules.xHalfSize = int.Parse(reader.GetAttribute("X_Half_Size"));
                             rules.ySize = int.Parse(reader.GetAttribute("Y_Size"));
+                            rules.currentTime = int.Parse(reader.GetAttribute("Current_Time"));
+                            rules.maxBuildup = int.Parse(reader.GetAttribute("Max_Buildup"));
                         }
                     }
                     if (reader.NodeType == XmlNodeType.Element && reader.Name == "MoveRules")

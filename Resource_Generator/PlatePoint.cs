@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace Resource_Generator
 {
@@ -8,14 +9,29 @@ namespace Resource_Generator
     public class PlatePoint : IComparable, IPoint
     {
         /// <summary>
-        /// Contains the position and can handle most positional data.
+        /// The position of this point.
         /// </summary>
-        private BasePoint _point;
+        private BasePoint point;
 
         /// <summary>
-        /// Represents the height of the plate.
+        /// Indicates when this point was initially generated.
         /// </summary>
-        public double Height;
+        public int _birthDate;
+
+        /// <summary>
+        /// Indicates where this point was initially generated.
+        /// </summary>
+        public SimplePoint _birthPlace;
+
+        /// <summary>
+        /// Contains the boundary history of this point.
+        /// </summary>
+        public BoundaryHistory History;
+
+        /// <summary>
+        /// Indicates whether the point is continental crust or oceanic crust.
+        /// </summary>
+        public bool IsContinental;
 
         /// <summary>
         /// Indicates which plate this point is part of.
@@ -23,28 +39,50 @@ namespace Resource_Generator
         public int PlateNumber;
 
         /// <summary>
-        /// Constructor for Plate Point.
+        /// Constructor for plate generation for saved data.
         /// </summary>
-        /// <param name="inX">X coordinate for point.</param>
-        /// <param name="inY">Y coordinate for point.</param>
-        /// <param name="inPlateNumber">Number for which plate this point is part of.</param>
-        /// <param name="inHeight">Height of Plate Point, defaults to 0.</param>
-        public PlatePoint(int inX, int inY, int inPlateNumber = 0, double inHeight = 0)
+        /// <param name="inPosition">Current position for point.</param>
+        /// <param name="inBirthPlace">Birthplace for point.</param>
+        /// <param name="inBirthDate">Birthdate for point.</param>
+        /// <param name="inPlate">Which plate point is part of.</param>
+        /// <param name="inHistory">Boundary history for point.</param>
+        /// <param name="inIsContinental">Whether or not the point is continental or oceanic.</param>
+        public PlatePoint(SimplePoint inPosition, SimplePoint inBirthPlace, int inBirthDate, int inPlate, BoundaryHistory inHistory, bool inIsContinental)
         {
-            _point = new BasePoint(inX, inY);
-            Height = inHeight;
-            PlateNumber = inPlateNumber;
+            point = new BasePoint(inPosition);
+            _birthPlace = inBirthPlace;
+            _birthDate = inBirthDate;
+            PlateNumber = inPlate;
+            History = inHistory;
+            IsContinental = inIsContinental;
+        }
+
+        /// <summary>
+        /// Constructor for plate expansion.
+        /// </summary>
+        /// <param name="inPoint">Input point.</param>
+        public PlatePoint(OverlapPoint inPoint, int inBirthDate = 0)
+        {
+            _birthPlace = new SimplePoint(inPoint.X, inPoint.Y);
+            point = new BasePoint(_birthPlace);
+            _birthDate = inBirthDate;
+            PlateNumber = inPoint.plateIndex[0];
+            IsContinental = false;
+            History = new BoundaryHistory();
         }
 
         /// <summary>
         /// Constructor for Plate Point.
         /// </summary>
         /// <param name="point">Point to copy.</param>
-        public PlatePoint(PlatePoint point)
+        public PlatePoint(PlatePoint inPoint)
         {
-            _point = new BasePoint(point._point);
-            Height = point.Height;
-            PlateNumber = point.PlateNumber;
+            point = inPoint.point;
+            PlateNumber = inPoint.PlateNumber;
+            _birthDate = inPoint._birthDate;
+            _birthPlace = inPoint._birthPlace;
+            History = inPoint.History;
+            IsContinental = inPoint.IsContinental;
         }
 
         /// <summary>
@@ -52,23 +90,15 @@ namespace Resource_Generator
         /// </summary>
         /// <param name="inPoint"> Input coordinates for new point.</param>
         /// <param name="inPlateNumber">Number for which plate this point is part of.</param>
-        /// <param name="inHeight">Height of Plate Point, defaults to 0.</param>
-        public PlatePoint(SimplePoint inPoint, int inPlateNumber = 0, double inHeight = 0)
+        /// <param name="time">Time for point creation.</param>
+        public PlatePoint(SimplePoint inPoint, int inPlateNumber = 0, int time = 0)
         {
-            _point = new BasePoint(inPoint);
-            Height = inHeight;
+            point = new BasePoint(inPoint);
+            _birthDate = time;
             PlateNumber = inPlateNumber;
-        }
-
-        /// <summary>
-        /// Constructor for Plate Point.
-        /// </summary>
-        /// <param name="inPoint"> Input coordinates for new point.</param>
-        /// <param name="inHeight">Height of Plate Point, defaults to 0.</param>
-        public PlatePoint(BasePoint inPoint, double inHeight = 0)
-        {
-            _point = inPoint;
-            Height = inHeight;
+            _birthPlace = inPoint;
+            History = new BoundaryHistory();
+            IsContinental = false;
         }
 
         /// <summary>
@@ -78,7 +108,7 @@ namespace Resource_Generator
         {
             get
             {
-                return _point.X;
+                return point.X;
             }
         }
 
@@ -89,8 +119,71 @@ namespace Resource_Generator
         {
             get
             {
-                return _point.Y;
+                return point.Y;
             }
+        }
+
+        /// <summary>
+        /// Resolves multiple points of the same plate.
+        /// </summary>
+        /// <param name="points">Other points to resolve.</param>
+        public static PlatePoint ResolveSamePlateNeighbors(List<PlatePoint> inPoints, double xCoord, double yCoord, SimplePoint newPosition, int newPlate)
+        {
+            bool isPureOceanic = true;
+            List<PlatePoint> continentalList = new List<PlatePoint>();
+            foreach (PlatePoint iPoint in inPoints)
+            {
+                if (iPoint.IsContinental)
+                {
+                    isPureOceanic = false;
+                    continentalList.Add(iPoint);
+                }
+            }
+            double weightTotal = 0;
+            double xBirth = 0;
+            double yBirth = 0;
+            double birthDate = 0;
+            double[] historyVars = new double[4];
+            if (isPureOceanic)
+            {
+                foreach (PlatePoint iPoint in inPoints)
+                {
+                    double weight = iPoint.point.Distance(xCoord, yCoord);
+                    weightTotal += 1 / weight;
+                    xBirth += iPoint._birthPlace.X / weight;
+                    yBirth += iPoint._birthPlace.Y / weight;
+                    historyVars[0] += iPoint.History.ContinentalBuildup / weight;
+                    historyVars[1] += iPoint.History.ContinentalRecency / weight;
+                    historyVars[2] += iPoint.History.OceanicBuildup / weight;
+                    historyVars[3] += iPoint.History.OceanicRecency / weight;
+                    birthDate += iPoint._birthDate / weight;
+                }
+            }
+            else
+            {
+                foreach (PlatePoint iPoint in continentalList)
+                {
+                    double weight = iPoint.point.Distance(xCoord, yCoord);
+                    weightTotal += 1 / weight;
+                    xBirth += iPoint._birthPlace.X / weight;
+                    yBirth += iPoint._birthPlace.Y / weight;
+                    historyVars[0] += iPoint.History.ContinentalBuildup / weight;
+                    historyVars[1] += iPoint.History.ContinentalRecency / weight;
+                    historyVars[2] += iPoint.History.OceanicBuildup / weight;
+                    historyVars[3] += iPoint.History.OceanicRecency / weight;
+                    birthDate += iPoint._birthDate / weight;
+                }
+            }
+            xBirth = xBirth / weightTotal;
+            yBirth = yBirth / weightTotal;
+            historyVars[0] = historyVars[0] / weightTotal;
+            historyVars[1] = historyVars[1] / weightTotal;
+            historyVars[2] = historyVars[2] / weightTotal;
+            historyVars[3] = historyVars[3] / weightTotal;
+            SimplePoint newBirthPoint = new SimplePoint((int)Math.Round(xBirth), (int)Math.Round(yBirth));
+            BoundaryHistory newHistory = new BoundaryHistory((int)Math.Round(historyVars[0]), (int)Math.Round(historyVars[1]), (int)Math.Round(historyVars[2]), (int)Math.Round(historyVars[3]));
+            int newBirthDate = (int)Math.Round(birthDate / weightTotal);
+            return new PlatePoint(newPosition, newBirthPoint, newBirthDate, newPlate, newHistory, !isPureOceanic);
         }
 
         /// <summary>
@@ -107,7 +200,7 @@ namespace Resource_Generator
             }
             if (obj is PlatePoint otherPoint)
             {
-                return _point.CompareTo(otherPoint._point);
+                return point.CompareTo(otherPoint.point);
             }
             else
             {
@@ -122,7 +215,7 @@ namespace Resource_Generator
         /// <returns>Distance between the two points.</returns>
         public double Distance(PlatePoint inPlatePoint)
         {
-            return _point.Distance(inPlatePoint._point);
+            return point.Distance(inPlatePoint.point);
         }
 
         /// <summary>
@@ -132,7 +225,7 @@ namespace Resource_Generator
         /// <param name="belowPoint">The point below this point.</param>
         public void FindAboveBelowPoints(out SimplePoint abovePoint, out SimplePoint belowPoint)
         {
-            _point.FindAboveBelowPoints(out abovePoint, out belowPoint);
+            point.FindAboveBelowPoints(out abovePoint, out belowPoint);
         }
 
         /// <summary>
@@ -142,7 +235,7 @@ namespace Resource_Generator
         /// <param name="rightPoint">The point to the right of this point.</param>
         public void FindLeftRightPoints(out SimplePoint leftPoint, out SimplePoint rightPoint)
         {
-            _point.FindLeftRightPoints(out leftPoint, out rightPoint);
+            point.FindLeftRightPoints(out leftPoint, out rightPoint);
         }
 
         /// <summary>
@@ -155,28 +248,56 @@ namespace Resource_Generator
         /// <param name="yMax">Maximum Y boundary.</param>
         public void Range(double range, out int xMin, out int xMax, out int yMin, out int yMax)
         {
-            _point.Range(range, out xMin, out xMax, out yMin, out yMax);
+            point.Range(range, out xMin, out xMax, out yMin, out yMax);
         }
 
         /// <summary>
-        /// Tests the momentum and returns true if the momentum exceeds the area corrected threshold.
+        /// Resolves multiple points of the same plate.
         /// </summary>
-        /// <param name="momentum">Momentum to test.</param>
-        /// <param name="threshold">Uncorrected threshold to test for.</param>
-        /// <returns>True if test succeeds, false otherwise.</returns>
-        public bool TestMomentum(double momentum, double threshold)
+        /// <param name="points">Other points to resolve.</param>
+        public void ResolveSamePlateOverlap(List<PlatePoint> points)
         {
-            return _point.TestMomentum(momentum, threshold);
+            int count = 0;
+            int xBirth = 0;
+            int yBirth = 0;
+            if (IsContinental)
+            {
+                count++;
+                xBirth += _birthPlace.X;
+                yBirth += _birthPlace.Y;
+            }
+            foreach (PlatePoint iPoint in points)
+            {
+                if (iPoint.IsContinental)
+                {
+                    IsContinental = true;
+                    count++;
+                    _birthDate += iPoint._birthDate;
+                    xBirth += iPoint._birthPlace.X;
+                    yBirth += iPoint._birthPlace.Y;
+                    History += iPoint.History;
+                }
+            }
+            if (count > 1)
+            {
+                _birthDate = _birthDate / count;
+                xBirth = (int)(Math.Round(xBirth / (double)count));
+                yBirth = (int)(Math.Round(yBirth / (double)count));
+                History = History / count;
+            }
+            if (count != 0)
+            {
+                _birthPlace = new SimplePoint(xBirth, yBirth);
+            }
         }
 
         /// <summary>
-        /// Calculates new position of point for a given rotation.
+        /// Moves point by a given rotation.
         /// </summary>
         /// <param name="angle">Three dimensional angle for rotation, given in radians.</param>
-        /// <returns>New position given as a Simple Point.</returns>
-        public SimplePoint Transform(double[] angle)
+        public void Transform(double[] angle)
         {
-            return _point.Transform(angle);
+            point = new BasePoint(point.Transform(angle));
         }
     }
 }

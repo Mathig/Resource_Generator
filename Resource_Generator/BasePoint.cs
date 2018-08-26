@@ -78,18 +78,6 @@ namespace Resource_Generator
         }
 
         /// <summary>
-        /// Constructor for the Base Point. Takes in a Base Point structure.
-        /// </summary>
-        /// <param name="inPoint">Input Point.</param>
-        public BasePoint(BasePoint inPoint)
-        {
-            _position = inPoint._position;
-            _theta = _position.X * _dTheta;
-            _cosPhi = Math.Cos((_position.Y * _dPhi) + _phiShift);
-            _sinPhi = Math.Sin((_position.Y * _dPhi) + _phiShift);
-        }
-
-        /// <summary>
         /// Opens <see cref="SimplePoint.X"/> to access through X.
         /// </summary>
         public int X

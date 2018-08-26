@@ -12,7 +12,7 @@ namespace Resource_Generator
         /// <summary>
         /// List of points associated with a particular "plate".
         /// </summary>
-        private static List<PlatePoint>[] platePoints;
+        private static List<SimplePoint>[] platePoints;
 
         /// <summary>
         /// List of active points, used for processing points.
@@ -37,7 +37,7 @@ namespace Resource_Generator
         /// <summary>
         /// List of points associated with a temporary "plate".
         /// </summary>
-        private static List<PlatePoint> temporaryPoints;
+        private static List<SimplePoint> temporaryPoints;
 
         /// <summary>
         /// Scans for all points in <see cref="pointActives"/> that are set to true and are
@@ -53,7 +53,7 @@ namespace Resource_Generator
             while (pointStack.Count != 0)
             {
                 SimplePoint point = pointStack.Pop();
-                temporaryPoints.Add(new PlatePoint(point));
+                temporaryPoints.Add(point);
                 SimplePoint[] newPoints = new SimplePoint[4];
                 point.FindLeftRightPoints(out newPoints[0], out newPoints[1]);
                 point.FindAboveBelowPoints(out newPoints[2], out newPoints[3]);
@@ -71,18 +71,11 @@ namespace Resource_Generator
         private static PlatePoint[,] CompileData()
         {
             PlatePoint[,] output = new PlatePoint[2 * rules.xHalfSize, rules.ySize];
-            Parallel.For(0, (2 * rules.xHalfSize), (x) =>
-            {
-                for (int y = 0; y < rules.ySize; y++)
-                {
-                    output[x, y] = new PlatePoint(x, y);
-                }
-            });
             Parallel.For(0, (rules.plateCount), (i) =>
             {
                 for (int j = 0; j < platePoints[i].Count; j++)
                 {
-                    output[platePoints[i][j].X, platePoints[i][j].Y].PlateNumber = i;
+                    output[platePoints[i][j].X, platePoints[i][j].Y] = new PlatePoint(platePoints[i][j], i, rules.currentTime);
                 }
             });
             return output;
@@ -97,12 +90,12 @@ namespace Resource_Generator
             pointMap = new BasePoint[2 * rules.xHalfSize, rules.ySize];
             pointMagnitudes = new double[2 * rules.xHalfSize, rules.ySize];
             pointActives = new bool[2 * rules.xHalfSize, rules.ySize];
-            platePoints = new List<PlatePoint>[rules.plateCount];
+            platePoints = new List<SimplePoint>[rules.plateCount];
             for (int i = 0; i < rules.plateCount; i++)
             {
-                platePoints[i] = new List<PlatePoint>();
+                platePoints[i] = new List<SimplePoint>();
             }
-            temporaryPoints = new List<PlatePoint>();
+            temporaryPoints = new List<SimplePoint>();
             Parallel.For(0, (2 * rules.xHalfSize), (x) =>
             {
                 for (int y = 0; y < rules.ySize; y++)
@@ -188,11 +181,10 @@ namespace Resource_Generator
                 if (!pointActives[borderPoint.X, borderPoint.Y])
                 {
                     pointActives[borderPoint.X, borderPoint.Y] = true;
-                    SimplePoint oldPoint = new SimplePoint(borderPoint.X, borderPoint.Y);
-                    platePoints[borderPoint.plateIndex[0]].Add(new PlatePoint(oldPoint));
+                    platePoints[borderPoint.plateIndex[0]].Add(new SimplePoint(borderPoint.X, borderPoint.Y));
                     SimplePoint[] newPointsP = new SimplePoint[4];
-                    oldPoint.FindLeftRightPoints(out newPointsP[0], out newPointsP[1]);
-                    oldPoint.FindAboveBelowPoints(out newPointsP[2], out newPointsP[3]);
+                    borderPoint.FindLeftRightPoints(out newPointsP[0], out newPointsP[1]);
+                    borderPoint.FindAboveBelowPoints(out newPointsP[2], out newPointsP[3]);
                     for (int k = 0; k < 4; k++)
                     {
                         if (!pointActives[newPointsP[k].X, newPointsP[k].Y])
@@ -262,24 +254,24 @@ namespace Resource_Generator
             if (pointActives[inPoint.X, inPoint.Y])
             {
                 CheckNeighbor(inPoint);
-                foreach (List<PlatePoint> pointList in platePoints)
+                foreach (List<SimplePoint> pointList in platePoints)
                 {
                     if (pointList.Count == 0)
                     {
                         pointList.Clear();
-                        foreach (PlatePoint iPoint in temporaryPoints)
+                        foreach (SimplePoint iPoint in temporaryPoints)
                         {
                             pointList.Add(iPoint);
                         }
                         return;
                     }
                 }
-                foreach (List<PlatePoint> pointList in platePoints)
+                foreach (List<SimplePoint> pointList in platePoints)
                 {
                     if (pointList.Count < temporaryPoints.Count)
                     {
                         pointList.Clear();
-                        foreach (PlatePoint iPoint in temporaryPoints)
+                        foreach (SimplePoint iPoint in temporaryPoints)
                         {
                             pointList.Add(iPoint);
                         }
@@ -307,7 +299,7 @@ namespace Resource_Generator
             }
             Parallel.For(0, (rules.plateCount), (i) =>
             {
-                foreach (PlatePoint iPoint in platePoints[i])
+                foreach (SimplePoint iPoint in platePoints[i])
                 {
                     pointActives[iPoint.X, iPoint.Y] = true;
                 }
@@ -327,8 +319,7 @@ namespace Resource_Generator
             NoiseFilter(CutoffMagnitude());
             PlateMaking();
             ExpandPlates();
-            PlatePoint[,] output = CompileData();
-            return output;
+            return CompileData();
         }
     }
 }

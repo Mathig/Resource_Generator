@@ -131,7 +131,7 @@ namespace Resource_Generator
                 file.WriteLine("<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"yes\"?>");
                 file.WriteLine("<root>");
                 file.WriteLine("<Handler Generation_Length = \"10\"/>");
-                file.WriteLine("<General Plate_Count = \"10\" X_Half_Size = \"1000\" Y_Size = \"1000\"/>");
+                file.WriteLine("<General Plate_Count = \"10\" X_Half_Size = \"1000\" Y_Size = \"1000\" Current_Time = \"0\" Max_Buildup = \"0\"/>");
                 for (int i = 0; i < 10; i++)
                 {
                     file.WriteLine("<Magnitude index = \"" + i.ToString() + "\" value = \"" + (16 - i).ToString() + "\"/>");
@@ -145,7 +145,7 @@ namespace Resource_Generator
             {
                 file.WriteLine("<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"yes\"?>");
                 file.WriteLine("<root>");
-                file.WriteLine("<General Plate_Count = \"10\" X_Half_Size = \"1000\" Y_Size = \"1000\"/>");
+                file.WriteLine("<General Plate_Count = \"10\" X_Half_Size = \"1000\" Y_Size = \"1000\" Current_Time = \"0\" Max_Buildup = \"0\"/>");
                 file.WriteLine("<MoveRules Overlap_Factor = \"0.6\" Time_Step = \"1\"/>");
                 file.WriteLine("</root>");
             }

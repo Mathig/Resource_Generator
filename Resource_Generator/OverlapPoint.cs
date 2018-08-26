@@ -14,62 +14,26 @@ namespace Resource_Generator
         private readonly SimplePoint _position;
 
         /// <summary>
+        /// Contains indexes for which points are continental.
+        /// </summary>
+        public List<bool> isContinentalIndex;
+
+        /// <summary>
         /// Contains list of indexes for which plates are overlapped.
         /// </summary>
         public List<int> plateIndex;
 
         /// <summary>
-        /// Contains list of indexes for where the points are in each plate that is overlapped.
-        /// </summary>
-        public List<int> pointIndex;
-
-        /// <summary>
         /// Constructor that sets the position and initial indexes.
         /// </summary>
-        /// <param name="inX">X Coordinate of point.</param>
-        /// <param name="inY">Y Coordinate of point.</param>
-        /// <param name="inPlateIndex">First index for plate index.</param>
-        /// <param name="inPointIndex">First index for point index.</param>
-        public OverlapPoint(int inX, int inY, int inPlateIndex, int inPointIndex)
+        /// <param name="iPoint">Input Point.</param>
+        public OverlapPoint(PlatePoint iPoint)
         {
-            _position = new SimplePoint(inX, inY);
+            _position = new SimplePoint(iPoint.X, iPoint.Y);
             plateIndex = new List<int>();
-            pointIndex = new List<int>();
-            plateIndex.Add(inPlateIndex);
-            pointIndex.Add(inPointIndex);
-        }
-
-        /// <summary>
-        /// Constructor that sets the position and initial indexes.
-        /// </summary>
-        /// <param name="inX">X Coordinate of point.</param>
-        /// <param name="inY">Y Coordinate of point.</param>
-        /// <param name="inPlateIndex">Plate index.</param>
-        /// <param name="inPointIndex">Point index.</param>
-        public OverlapPoint(int inX, int inY, List<int> inPlateIndex, List<int> inPointIndex)
-        {
-            _position = new SimplePoint(inX, inY);
-            plateIndex = inPlateIndex;
-            pointIndex = inPointIndex;
-        }
-
-        /// <summary>
-        /// Constructor that sets the position and initial indexes.
-        /// </summary>
-        /// <param name="inPoint">Input Overlap Point to copy.</param>
-        public OverlapPoint(OverlapPoint inPoint)
-        {
-            _position = new SimplePoint(inPoint.X, inPoint.Y);
-            plateIndex = new List<int>();
-            pointIndex = new List<int>();
-            foreach (int iInt in inPoint.plateIndex)
-            {
-                plateIndex.Add(iInt);
-            }
-            foreach (int iInt in inPoint.pointIndex)
-            {
-                pointIndex.Add(iInt);
-            }
+            isContinentalIndex = new List<bool>();
+            plateIndex.Add(iPoint.PlateNumber);
+            isContinentalIndex.Add(iPoint.IsContinental);
         }
 
         /// <summary>
@@ -149,39 +113,22 @@ namespace Resource_Generator
         }
 
         /// <summary>
-        /// Reduces this overlap point to not include duplicate points on the same plate.
+        /// Tests to see if all points are oceanic. Returns the index of the first continental point if false.
         /// </summary>
-        /// <param name="reducedPlates">Plates with duplicate points.</param>
-        /// <returns>Reduced Overlap Point.</returns>
-        public OverlapPoint ReduceOverlapPoint(List<int> reducedPlates)
+        /// <param name="index">Index of first continental point.</param>
+        /// <returns>True if only oceanic, otherwise false.</returns>
+        public bool IsOceanicOnly(out int index)
         {
-            List<int> outPlates = new List<int>();
-            List<int> outPoints = new List<int>();
-            bool[] firstPoints = new bool[reducedPlates.Count];
-            for (int i = 0; i < plateIndex.Count; i++)
+            for (int i = 0; i < isContinentalIndex.Count; i++)
             {
-                bool notSame = true;
-                for (int j = 0; j < reducedPlates.Count; j++)
+                if (isContinentalIndex[i])
                 {
-                    if (reducedPlates[j] == plateIndex[i])
-                    {
-                        if (!firstPoints[j])
-                        {
-                            firstPoints[j] = true;
-                            outPlates.Add(plateIndex[i]);
-                            outPoints.Add(pointIndex[i]);
-                        }
-                        notSame = false;
-                        break;
-                    }
-                }
-                if (notSame)
-                {
-                    outPlates.Add(plateIndex[i]);
-                    outPoints.Add(pointIndex[i]);
+                    index = i;
+                    return false;
                 }
             }
-            return new OverlapPoint(X, Y, outPlates, outPoints);
+            index = 0;
+            return true;
         }
     }
 }
