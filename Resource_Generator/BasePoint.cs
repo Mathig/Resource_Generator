@@ -43,14 +43,14 @@ namespace Resource_Generator
         private readonly SimplePoint _position;
 
         /// <summary>
-        /// Sine of angular position of point. Phi ranges from -pi/2 to pi/2.
-        /// </summary>
-        private readonly double _sinPhi;
-
-        /// <summary>
         /// Angular position of point, ranges from 0 to 2 pi.
         /// </summary>
         private readonly double _theta;
+
+        /// <summary>
+        /// Sine of angular position of point. Phi ranges from -pi/2 to pi/2.
+        /// </summary>
+        public readonly double _sinPhi;
 
         /// <summary>
         /// Constructor for the Base Point. Takes in X and Y coordinates.

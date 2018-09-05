@@ -369,6 +369,9 @@ namespace Resource_Generator
                         if (reader.HasAttributes)
                         {
                             rules.axisTilt = double.Parse(reader.GetAttribute("Axis_Tilt"));
+                            rules.axisTilt = double.Parse(reader.GetAttribute("Ocean_Weight"));
+                            rules.axisTilt = double.Parse(reader.GetAttribute("Land_Weight"));
+                            rules.axisTilt = double.Parse(reader.GetAttribute("Altitude_Weight"));
                             rules.numberSeasons = int.Parse(reader.GetAttribute("Number_of_Seasons"));
                         }
                     }
