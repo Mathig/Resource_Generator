@@ -156,6 +156,14 @@ namespace Resource_Generator
                 file.WriteLine("<General Plate_Count = \"10\" X_Half_Size = \"1000\" Y_Size = \"1000\" Current_Time = \"0\" Max_Buildup = \"0\"/>");
                 file.WriteLine("</root>");
             }
+            using (StreamWriter file = new StreamWriter(directory + "\\GenerateRainfallRules.xml", false))
+            {
+                file.WriteLine("<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"yes\"?>");
+                file.WriteLine("<root>");
+                file.WriteLine("<General Plate_Count = \"10\" X_Half_Size = \"1000\" Y_Size = \"1000\" Current_Time = \"0\" Max_Buildup = \"0\"/>");
+                file.WriteLine("<Rainfall Axis_Tilt = \"0\" Number_of_Seasons = \"4\"/>");
+                file.WriteLine("</root>");
+            }
             using (StreamWriter file = new StreamWriter(directory + "\\PlateData.xml", false))
             {
                 file.WriteLine("<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"yes\"?>");

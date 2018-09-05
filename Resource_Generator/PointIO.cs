@@ -90,37 +90,6 @@ namespace Resource_Generator
         }
 
         /// <summary>
-        /// Opens a data file and outputs a double array of the data, presumed to be heights. Returns
-        /// true if successful, false otherwise.
-        /// </summary>
-        /// <param name="fileName">File Name (not including extension) to open.</param>
-        /// <param name="heights">Output of file data.</param>
-        /// <param name="size">Size of map, as <see cref="PlateLayer._layerSize"/>.</param>
-        /// <returns>Returns true if successful, false otherwise.</returns>
-        private static bool OpenHeightData(string fileName, int xSize, int ySize, out double[,] heights)
-        {
-            heights = new double[xSize, ySize];
-            try
-            {
-                using (BinaryReader reader = new BinaryReader(File.Open(fileName, FileMode.Open)))
-                {
-                    for (int x = 0; x < xSize; x++)
-                    {
-                        for (int y = 0; y < ySize; y++)
-                        {
-                            heights[x, y] = reader.ReadDouble();
-                        }
-                    }
-                }
-                return true;
-            }
-            catch (Exception e) when (e is FileNotFoundException || e is NullReferenceException || e is EndOfStreamException)
-            {
-                return false;
-            }
-        }
-
-        /// <summary>
         /// Stores integer data to image file.
         /// </summary>
         /// <param name="fileName">Full file path name.</param>
@@ -191,6 +160,37 @@ namespace Resource_Generator
                 }
             });
             return output;
+        }
+
+        /// <summary>
+        /// Opens a data file and outputs a double array of the data, presumed to be heights. Returns
+        /// true if successful, false otherwise.
+        /// </summary>
+        /// <param name="fileName">File Name (not including extension) to open.</param>
+        /// <param name="heights">Output of file data.</param>
+        /// <param name="size">Size of map, as <see cref="PlateLayer._layerSize"/>.</param>
+        /// <returns>Returns true if successful, false otherwise.</returns>
+        public static bool OpenHeightData(string fileName, int xSize, int ySize, out double[,] heights)
+        {
+            heights = new double[xSize, ySize];
+            try
+            {
+                using (BinaryReader reader = new BinaryReader(File.Open(fileName, FileMode.Open)))
+                {
+                    for (int x = 0; x < xSize; x++)
+                    {
+                        for (int y = 0; y < ySize; y++)
+                        {
+                            heights[x, y] = reader.ReadDouble();
+                        }
+                    }
+                }
+                return true;
+            }
+            catch (Exception e) when (e is FileNotFoundException || e is NullReferenceException || e is EndOfStreamException)
+            {
+                return false;
+            }
         }
 
         /// <summary>

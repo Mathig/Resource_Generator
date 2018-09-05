@@ -101,6 +101,35 @@ namespace Resource_Generator
             return true;
         }
 
+        /// <summary>
+        /// Checks the rainfall rules to confirm they are valid.
+        /// </summary>
+        /// <param name="rules">Rules to check.</param>
+        /// <returns>True if valid, false otherwise.</returns>
+        private static bool CheckRainfallRules(RainfallMapRules rules)
+        {
+            try
+            {
+                if (rules.xHalfSize == 0 || rules.ySize == 0 || rules.plateCount == 0)
+                {
+                    Console.WriteLine("Altitude Rules file is formatted incorrectly.");
+                    return false;
+                }
+            }
+            catch (NullReferenceException)
+            {
+                Console.WriteLine("Altitude Rules file is formatted incorrectly.");
+                return false;
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// Loads rules for altitude map.
+        /// </summary>
+        /// <param name="fileName">Altitude map file name.</param>
+        /// <param name="rules">Rules to generate</param>
+        /// <returns>True if successful, false otherwise.</returns>
         public static bool LoadAltitudeRules(string fileName, out AltitudeMapRules rules)
         {
             rules = new AltitudeMapRules();
@@ -308,6 +337,64 @@ namespace Resource_Generator
                 return false;
             }
             return CheckMoveRules(rules);
+        }
+
+        /// <summary>
+        /// Loads rules for rainfall map.
+        /// </summary>
+        /// <param name="fileName">Altitude map file name.</param>
+        /// <param name="rules">Rules to generate</param>
+        /// <returns>True if successful, false otherwise.</returns>
+        public static bool LoadRainfallRules(string fileName, out RainfallMapRules rules)
+        {
+            rules = new RainfallMapRules();
+            try
+            {
+                XmlReader reader = XmlReader.Create(directory + "\\" + fileName + ".xml");
+                while (reader.Read())
+                {
+                    if (reader.NodeType == XmlNodeType.Element && reader.Name == "General")
+                    {
+                        if (reader.HasAttributes)
+                        {
+                            rules.plateCount = int.Parse(reader.GetAttribute("Plate_Count"));
+                            rules.xHalfSize = int.Parse(reader.GetAttribute("X_Half_Size"));
+                            rules.ySize = int.Parse(reader.GetAttribute("Y_Size"));
+                            rules.currentTime = int.Parse(reader.GetAttribute("Current_Time"));
+                            rules.maxBuildup = int.Parse(reader.GetAttribute("Max_Buildup"));
+                        }
+                    }
+                    if (reader.NodeType == XmlNodeType.Element && reader.Name == "Rainfall")
+                    {
+                        if (reader.HasAttributes)
+                        {
+                            rules.axisTilt = double.Parse(reader.GetAttribute("Axis_Tilt"));
+                            rules.numberSeasons = int.Parse(reader.GetAttribute("Number_of_Seasons"));
+                        }
+                    }
+                }
+            }
+            catch (FileNotFoundException)
+            {
+                Console.WriteLine("Altitude Rules file not found.");
+                return false;
+            }
+            catch (UriFormatException)
+            {
+                Console.WriteLine("Altitude Rules file yielded UriFormatException.");
+                return false;
+            }
+            catch (XmlException e)
+            {
+                Console.WriteLine("XML Exception: " + e.Message);
+                return false;
+            }
+            catch (NullReferenceException)
+            {
+                Console.WriteLine("Altitude Rules file is formatted incorrectly.");
+                return false;
+            }
+            return CheckRainfallRules(rules);
         }
     }
 }

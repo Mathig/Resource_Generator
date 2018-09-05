@@ -36,6 +36,10 @@ namespace Resource_Generator
                         closeProgram = !GeneratePlates();
                         break;
 
+                    case "Generate Rainfall Map":
+                        closeProgram = !GenerateRainfall();
+                        break;
+
                     case "Generate Altitude Map":
                         closeProgram = !GenerateAltitudes();
                         break;
@@ -170,6 +174,60 @@ namespace Resource_Generator
             PlatePoint[,] pointData = GeneratePlateData.Run(rules);
             PointIO.SavePointData(outDataLocation.name, rules, pointData);
             PointIO.SavePointImage(outImageLocation.name, rules, pointData);
+            return true;
+        }
+
+        /// <summary>
+        /// Generates rainfall map.
+        /// </summary>
+        /// <returns>True if successful, false if crashed.</returns>
+        private static bool GenerateRainfall()
+        {
+            Console.WriteLine("Input Rainfall Rules File Name.");
+            FileName rulesLocation = new FileName(Console.ReadLine());
+            if (!rulesLocation.IsValid())
+            {
+                Console.WriteLine("File name is invalid. " + validFileNameCriteria);
+                return false;
+            }
+            Console.WriteLine("Input Height Map Data File Name.");
+            FileName inDataLocation = new FileName(Console.ReadLine());
+            if (!inDataLocation.IsValid())
+            {
+                Console.WriteLine("File name is invalid. " + validFileNameCriteria);
+                return false;
+            }
+            Console.WriteLine("Input Rainfall Data File Name.");
+            FileName outDataLocation = new FileName(Console.ReadLine());
+            if (!outDataLocation.IsValid())
+            {
+                Console.WriteLine("File name is invalid. " + validFileNameCriteria);
+                return false;
+            }
+            if (!RulesInput.LoadRainfallRules(rulesLocation.name, out RainfallMapRules rules))
+            {
+                Console.WriteLine("Rules are invalid. See default rules.");
+                return false;
+            }
+            if (!PointIO.OpenHeightData(_directory + "\\" + inDataLocation.name, 2 * rules.xHalfSize, rules.ySize, out double[,] heightMap))
+            {
+                Console.WriteLine("Point Data is corrupted.");
+                return false;
+            }
+            double[,,] rainfallMap = GenerateRainfallMap.Run(heightMap, rules);
+            for (int i = 0; i < rainfallMap.GetLength(2); i++)
+            {
+                double[,] rainfallMapTemp = new double[rainfallMap.GetLength(0), rainfallMap.GetLength(1)];
+                for (int x = 0; x < rainfallMap.GetLength(0); x++)
+                {
+                    for (int y = 0; y < rainfallMap.GetLength(1); y++)
+                    {
+                        rainfallMapTemp[x, y] = rainfallMap[x, y, i];
+                    }
+                }
+                PointIO.SaveHeightImage(outDataLocation.name + i.ToString(), rainfallMapTemp);
+                PointIO.SaveMapData(_directory + "\\" + outDataLocation.name + i.ToString() + ".bin", rainfallMapTemp);
+            }
             return true;
         }
 
