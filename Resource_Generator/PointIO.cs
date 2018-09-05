@@ -121,17 +121,6 @@ namespace Resource_Generator
         }
 
         /// <summary>
-        /// Saves height data as an image file.
-        /// </summary>
-        /// <param name="fileName">File to store at, not including extension.</param>
-        /// <param name="heightData">Height data to store.</param>
-        private static void SaveHeightImage(string fileName, double[,] heightData)
-        {
-            int[,] imageData = ScaleData(heightData);
-            SaveImageData(directory + "\\" + fileName + ".png", imageData);
-        }
-
-        /// <summary>
         /// Stores integer data to image file.
         /// </summary>
         /// <param name="fileName">Full file path name.</param>
@@ -162,22 +151,6 @@ namespace Resource_Generator
                     }
                 }
                 image.Save(fileName);
-            }
-        }
-
-        /// <summary>
-        /// Saves double data from 2 dimensional array to .bin file.
-        /// </summary>
-        /// <param name="fileName">Name of file to store at, not including .bin extension.</param>
-        /// <param name="mapData">Data to store, in 2 dimesnional array of doubles.</param>
-        private static void SaveMapData(string fileName, double[,] mapData)
-        {
-            using (BinaryWriter writer = new BinaryWriter(File.Open(fileName, FileMode.Create)))
-            {
-                foreach (double iData in mapData)
-                {
-                    writer.Write(iData);
-                }
             }
         }
 
@@ -305,6 +278,33 @@ namespace Resource_Generator
             {
                 data = null;
                 return false;
+            }
+        }
+
+        /// <summary>
+        /// Saves height data as an image file.
+        /// </summary>
+        /// <param name="fileName">File to store at, not including extension.</param>
+        /// <param name="heightData">Height data to store.</param>
+        public static void SaveHeightImage(string fileName, double[,] heightData)
+        {
+            int[,] imageData = ScaleData(heightData);
+            SaveImageData(directory + "\\" + fileName + ".png", imageData);
+        }
+
+        /// <summary>
+        /// Saves double data from 2 dimensional array to .bin file.
+        /// </summary>
+        /// <param name="fileName">Name of file to store at, not including .bin extension.</param>
+        /// <param name="mapData">Data to store, in 2 dimesnional array of doubles.</param>
+        public static void SaveMapData(string fileName, double[,] mapData)
+        {
+            using (BinaryWriter writer = new BinaryWriter(File.Open(fileName, FileMode.Create)))
+            {
+                foreach (double iData in mapData)
+                {
+                    writer.Write(iData);
+                }
             }
         }
 

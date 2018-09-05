@@ -36,6 +36,10 @@ namespace Resource_Generator
                         closeProgram = !GeneratePlates();
                         break;
 
+                    case "Generate Altitude Map":
+                        closeProgram = !GenerateAltitudes();
+                        break;
+
                     case "Move Plates":
                         closeProgram = !MovePlates();
                         break;
@@ -89,6 +93,49 @@ namespace Resource_Generator
         }
 
         /// <summary>
+        /// Generates altitude map for points.
+        /// </summary>
+        /// <returns>True if succesful, otherwise false.</returns>
+        private static bool GenerateAltitudes()
+        {
+            Console.WriteLine("Input Generate Height Rules File Name.");
+            FileName rulesLocation = new FileName(Console.ReadLine());
+            if (!rulesLocation.IsValid())
+            {
+                Console.WriteLine("File name is invalid. " + validFileNameCriteria);
+                return false;
+            }
+            Console.WriteLine("Input Point Data File Name.");
+            FileName inDataLocation = new FileName(Console.ReadLine());
+            if (!inDataLocation.IsValid())
+            {
+                Console.WriteLine("File name is invalid. " + validFileNameCriteria);
+                return false;
+            }
+            Console.WriteLine("Input Height Data File Name.");
+            FileName outDataLocation = new FileName(Console.ReadLine());
+            if (!outDataLocation.IsValid())
+            {
+                Console.WriteLine("File name is invalid. " + validFileNameCriteria);
+                return false;
+            }
+            if (!RulesInput.LoadAltitudeRules(rulesLocation.name, out AltitudeMapRules rules))
+            {
+                Console.WriteLine("Rules are invalid. See default rules.");
+                return false;
+            }
+            if (!PointIO.OpenPointData(inDataLocation.name, rules, out PlatePoint[,] inPointData))
+            {
+                Console.WriteLine("Point Data is corrupted.");
+                return false;
+            }
+            double[,] heightMap = GenerateAltitudeMap.Run(inPointData, rules);
+            PointIO.SaveHeightImage(outDataLocation.name, heightMap);
+            PointIO.SaveMapData(_directory + "\\" + outDataLocation.name + ".bin", heightMap);
+            return true;
+        }
+
+        /// <summary>
         /// Generates tectonic plates.
         /// </summary>
         /// <returns>Returns true if successful, false if crashed.</returns>
@@ -137,6 +184,7 @@ namespace Resource_Generator
             Console.WriteLine("Move Directory: Moves the directory.");
             Console.WriteLine("Move Plates: Moves the Plates.");
             Console.WriteLine("Generate Plates: Generates the Plates");
+            Console.WriteLine("Generate Altitude Map: Generates altitude map.");
             Console.WriteLine("Close: Closes Program.");
         }
 

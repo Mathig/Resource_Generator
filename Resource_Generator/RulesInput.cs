@@ -15,6 +15,29 @@ namespace Resource_Generator
         public static string directory;
 
         /// <summary>
+        /// Checks the altitude rules to confirm they are valid.
+        /// </summary>
+        /// <param name="rules">Rules to check.</param>
+        /// <returns>True if valid, false otherwise.</returns>
+        private static bool CheckAltitudeRules(AltitudeMapRules rules)
+        {
+            try
+            {
+                if (rules.xHalfSize == 0 || rules.ySize == 0 || rules.plateCount == 0)
+                {
+                    Console.WriteLine("Altitude Rules file is formatted incorrectly.");
+                    return false;
+                }
+            }
+            catch (NullReferenceException)
+            {
+                Console.WriteLine("Altitude Rules file is formatted incorrectly.");
+                return false;
+            }
+            return true;
+        }
+
+        /// <summary>
         /// Checks the generation rules to confirm they are valid.
         /// </summary>
         /// <param name="rules">Rules to check.</param>
@@ -76,6 +99,50 @@ namespace Resource_Generator
                 return false;
             }
             return true;
+        }
+
+        public static bool LoadAltitudeRules(string fileName, out AltitudeMapRules rules)
+        {
+            rules = new AltitudeMapRules();
+            try
+            {
+                XmlReader reader = XmlReader.Create(directory + "\\" + fileName + ".xml");
+                while (reader.Read())
+                {
+                    if (reader.NodeType == XmlNodeType.Element && reader.Name == "General")
+                    {
+                        if (reader.HasAttributes)
+                        {
+                            rules.plateCount = int.Parse(reader.GetAttribute("Plate_Count"));
+                            rules.xHalfSize = int.Parse(reader.GetAttribute("X_Half_Size"));
+                            rules.ySize = int.Parse(reader.GetAttribute("Y_Size"));
+                            rules.currentTime = int.Parse(reader.GetAttribute("Current_Time"));
+                            rules.maxBuildup = int.Parse(reader.GetAttribute("Max_Buildup"));
+                        }
+                    }
+                }
+            }
+            catch (FileNotFoundException)
+            {
+                Console.WriteLine("Altitude Rules file not found.");
+                return false;
+            }
+            catch (UriFormatException)
+            {
+                Console.WriteLine("Altitude Rules file yielded UriFormatException.");
+                return false;
+            }
+            catch (XmlException e)
+            {
+                Console.WriteLine("XML Exception: " + e.Message);
+                return false;
+            }
+            catch (NullReferenceException)
+            {
+                Console.WriteLine("Altitude Rules file is formatted incorrectly.");
+                return false;
+            }
+            return CheckAltitudeRules(rules);
         }
 
         /// <summary>

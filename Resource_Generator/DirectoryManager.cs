@@ -149,6 +149,13 @@ namespace Resource_Generator
                 file.WriteLine("<MoveRules Overlap_Factor = \"0.6\" Time_Step = \"1\"/>");
                 file.WriteLine("</root>");
             }
+            using (StreamWriter file = new StreamWriter(directory + "\\GenerateAltitudeRules.xml", false))
+            {
+                file.WriteLine("<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"yes\"?>");
+                file.WriteLine("<root>");
+                file.WriteLine("<General Plate_Count = \"10\" X_Half_Size = \"1000\" Y_Size = \"1000\" Current_Time = \"0\" Max_Buildup = \"0\"/>");
+                file.WriteLine("</root>");
+            }
             using (StreamWriter file = new StreamWriter(directory + "\\PlateData.xml", false))
             {
                 file.WriteLine("<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"yes\"?>");
