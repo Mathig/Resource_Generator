@@ -28,6 +28,10 @@ namespace Resource_Generator
                 string newCommand = Console.ReadLine();
                 switch (newCommand)
                 {
+                    case "Erode Plates":
+                        closeProgram = !GenerateErosion();
+                        break;
+
                     case "Copy Plates":
                         closeProgram = !CopyPlates();
                         break;
@@ -140,6 +144,78 @@ namespace Resource_Generator
         }
 
         /// <summary>
+        /// Erodes plates.
+        /// </summary>
+        /// <returns>True if succesful, false otherwise.</returns>
+        private static bool GenerateErosion()
+        {
+            Console.WriteLine("Input Erosion Rules File Name.");
+            FileName rulesLocation = new FileName(Console.ReadLine());
+            if (!rulesLocation.IsValid())
+            {
+                Console.WriteLine("File name is invalid. " + validFileNameCriteria);
+                return false;
+            }
+            Console.WriteLine("Input Height Data File Name.");
+            FileName inHeightLocation = new FileName(Console.ReadLine());
+            if (!inHeightLocation.IsValid())
+            {
+                Console.WriteLine("File name is invalid. " + validFileNameCriteria);
+                return false;
+            }
+            Console.WriteLine("Input Rainfall Data File Name.");
+            FileName inRainLocation = new FileName(Console.ReadLine());
+            if (!inRainLocation.IsValid())
+            {
+                Console.WriteLine("File name is invalid. " + validFileNameCriteria);
+                return false;
+            }
+            FileName outErosionLocation = new FileName(Console.ReadLine());
+            if (!outErosionLocation.IsValid())
+            {
+                Console.WriteLine("File name is invalid. " + validFileNameCriteria);
+                return false;
+            }
+            FileName outIsWaterLocation = new FileName(Console.ReadLine());
+            if (!outIsWaterLocation.IsValid())
+            {
+                Console.WriteLine("File name is invalid. " + validFileNameCriteria);
+                return false;
+            }
+            if (!RulesInput.LoadErosionRules(rulesLocation.name, out ErosionMapRules rules))
+            {
+                Console.WriteLine("Rules are invalid. See default rules.");
+                return false;
+            }
+            if (!PointIO.OpenHeightData(_directory + "\\" + inHeightLocation.name + ".bin", 2 * rules.xHalfSize, rules.ySize, out double[,] heightMap))
+            {
+                Console.WriteLine("Height Data is corrupted.");
+                return false;
+            }
+            double[,] rainfallMap = new double[2 * rules.xHalfSize, rules.ySize];
+            for (int i = 0; i < rules.numberSeasons; i++)
+            {
+                if (!PointIO.OpenHeightData(_directory + "\\" + inHeightLocation.name + ".bin", 2 * rules.xHalfSize, rules.ySize, out double[,] rainfallMapTemp))
+                {
+                    Console.WriteLine("Rainfall Data is corrupted.");
+                    return false;
+                }
+                for (int x = 0; x < 2 * rules.xHalfSize; x++)
+                {
+                    for (int y = 0; y < rules.ySize; y++)
+                    {
+                        rainfallMap[x, y] += rainfallMapTemp[x, y];
+                    }
+                }
+            }
+            GenerateErosionMap.Run(heightMap, rainfallMap, rules, out bool[,] isWater, out double[,] erosionMap);
+            PointIO.SaveHeightImage(outErosionLocation.name, erosionMap);
+            PointIO.SaveMapData(_directory + "\\" + outErosionLocation.name + ".bin", erosionMap);
+            CheapBinaryIO.WriteBinary(_directory + "\\" + outIsWaterLocation.name + ".bin", isWater);
+            return true;
+        }
+
+        /// <summary>
         /// Generates tectonic plates.
         /// </summary>
         /// <returns>Returns true if successful, false if crashed.</returns>
@@ -237,6 +313,7 @@ namespace Resource_Generator
         private static void Help()
         {
             Console.WriteLine("Possible commands include:");
+            Console.WriteLine("Erode Plates: Erodes plates.");
             Console.WriteLine("Help: Lists possible commands.");
             Console.WriteLine("Copy Plates: Converts an image file of data to a binary data file.");
             Console.WriteLine("Move Directory: Moves the directory.");

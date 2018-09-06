@@ -23,7 +23,7 @@ namespace Resource_Generator
         {
             try
             {
-                if (rules.xHalfSize == 0 || rules.ySize == 0 || rules.plateCount == 0)
+                if (rules.xHalfSize < 1 || rules.ySize < 1 || rules.plateCount < 1)
                 {
                     Console.WriteLine("Altitude Rules file is formatted incorrectly.");
                     return false;
@@ -38,6 +38,34 @@ namespace Resource_Generator
         }
 
         /// <summary>
+        /// Checks the Erosion rules to confirm they are valid.
+        /// </summary>
+        /// <param name="rules">Rules to check.</param>
+        /// <returns>True if valid, false otherwise.</returns>
+        private static bool CheckErosionRules(ErosionMapRules rules)
+        {
+            try
+            {
+                if (rules.xHalfSize < 1 || rules.ySize < 1 || rules.plateCount < 1)
+                {
+                    Console.WriteLine("Erosion Rules file is formatted incorrectly.");
+                    return false;
+                }
+                if (rules.numberSeasons < 1)
+                {
+                    Console.WriteLine("Erosion Rules file is formatted incorrectly.");
+                    return false;
+                }
+            }
+            catch (NullReferenceException)
+            {
+                Console.WriteLine("Erosion Rules file is formatted incorrectly.");
+                return false;
+            }
+            return true;
+        }
+
+        /// <summary>
         /// Checks the generation rules to confirm they are valid.
         /// </summary>
         /// <param name="rules">Rules to check.</param>
@@ -46,7 +74,7 @@ namespace Resource_Generator
         {
             try
             {
-                if (rules.xHalfSize == 0 || rules.ySize == 0 || rules.plateCount == 0)
+                if (rules.xHalfSize < 1 || rules.ySize < 1 || rules.plateCount < 1)
                 {
                     Console.WriteLine("Generation Rules file is formatted incorrectly.");
                     return false;
@@ -59,7 +87,7 @@ namespace Resource_Generator
                         return false;
                     }
                 }
-                if (rules.cutOff == 0)
+                if (rules.cutOff == 0 || rules.cutOff > 2 * rules.xHalfSize * rules.ySize)
                 {
                     Console.WriteLine("Generation Rules file is formatted incorrectly.");
                     return false;
@@ -82,7 +110,7 @@ namespace Resource_Generator
         {
             try
             {
-                if (rules.xHalfSize == 0 || rules.ySize == 0 || rules.plateCount == 0)
+                if (rules.xHalfSize < 1 || rules.ySize < 1 || rules.plateCount < 1)
                 {
                     Console.WriteLine("Generation Rules file is formatted incorrectly.");
                     return false;
@@ -110,7 +138,7 @@ namespace Resource_Generator
         {
             try
             {
-                if (rules.xHalfSize == 0 || rules.ySize == 0 || rules.plateCount == 0)
+                if (rules.xHalfSize < 1 || rules.ySize < 1 || rules.plateCount < 1)
                 {
                     Console.WriteLine("Altitude Rules file is formatted incorrectly.");
                     return false;
@@ -172,6 +200,64 @@ namespace Resource_Generator
                 return false;
             }
             return CheckAltitudeRules(rules);
+        }
+
+        /// <summary>
+        /// Loads rules for Erosion map.
+        /// </summary>
+        /// <param name="fileName">Erosion map rules file name.</param>
+        /// <param name="rules">Rules to generate</param>
+        /// <returns>True if successful, false otherwise.</returns>
+        public static bool LoadErosionRules(string fileName, out ErosionMapRules rules)
+        {
+            rules = new ErosionMapRules();
+            try
+            {
+                XmlReader reader = XmlReader.Create(directory + "\\" + fileName + ".xml");
+                while (reader.Read())
+                {
+                    if (reader.NodeType == XmlNodeType.Element && reader.Name == "General")
+                    {
+                        if (reader.HasAttributes)
+                        {
+                            rules.plateCount = int.Parse(reader.GetAttribute("Plate_Count"));
+                            rules.xHalfSize = int.Parse(reader.GetAttribute("X_Half_Size"));
+                            rules.ySize = int.Parse(reader.GetAttribute("Y_Size"));
+                            rules.currentTime = int.Parse(reader.GetAttribute("Current_Time"));
+                            rules.maxBuildup = int.Parse(reader.GetAttribute("Max_Buildup"));
+                        }
+                    }
+                    if (reader.NodeType == XmlNodeType.Element && reader.Name == "Erosion")
+                    {
+                        if (reader.HasAttributes)
+                        {
+                            rules.waterThreshold = double.Parse(reader.GetAttribute("Water_Threshold"));
+                            rules.numberSeasons = int.Parse(reader.GetAttribute("Number_of_Seasons"));
+                        }
+                    }
+                }
+            }
+            catch (FileNotFoundException)
+            {
+                Console.WriteLine("Erosion Rules file not found.");
+                return false;
+            }
+            catch (UriFormatException)
+            {
+                Console.WriteLine("Erosion Rules file yielded UriFormatException.");
+                return false;
+            }
+            catch (XmlException e)
+            {
+                Console.WriteLine("XML Exception: " + e.Message);
+                return false;
+            }
+            catch (NullReferenceException)
+            {
+                Console.WriteLine("Erosion Rules file is formatted incorrectly.");
+                return false;
+            }
+            return CheckErosionRules(rules);
         }
 
         /// <summary>
