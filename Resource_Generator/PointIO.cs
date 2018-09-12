@@ -63,11 +63,6 @@ namespace Resource_Generator
         private const string yBirthPlaceExtension = "yBirthPlace.bin";
 
         /// <summary>
-        /// Location of file directory.
-        /// </summary>
-        public static string directory;
-
-        /// <summary>
         /// Finds the minimum and maximum value in a set.
         /// </summary>
         /// <param name="data">Set of data to search.</param>
@@ -90,6 +85,30 @@ namespace Resource_Generator
         }
 
         /// <summary>
+        /// Returns a color for a given integer.
+        /// </summary>
+        /// <param name="number">Integer to determine color.</param>
+        /// <returns>Color determined.</returns>
+        private static Rgba32 HeightMapColor(int number)
+        {
+            Rgba32 outColor;
+            outColor.A = 255;
+            if (number < 0)
+            {
+                outColor.R = (byte)(-1 * number);
+                outColor.G = 0;
+                outColor.B = 0;
+            }
+            else
+            {
+                outColor.R = 0;
+                outColor.G = (byte)number;
+                outColor.B = (byte)number;
+            }
+            return outColor;
+        }
+
+        /// <summary>
         /// Stores integer data to image file.
         /// </summary>
         /// <param name="fileName">Full file path name.</param>
@@ -102,21 +121,7 @@ namespace Resource_Generator
                 {
                     for (int y = 0; y < imageData.GetLength(1); y++)
                     {
-                        Rgba32 plateColor;
-                        plateColor.A = 255;
-                        if (imageData[x, y] < 0)
-                        {
-                            plateColor.R = (byte)(-1 * imageData[x, y]);
-                            plateColor.G = 0;
-                            plateColor.B = 0;
-                        }
-                        else
-                        {
-                            plateColor.R = 0;
-                            plateColor.G = (byte)imageData[x, y];
-                            plateColor.B = (byte)imageData[x, y];
-                        }
-                        image[x, y] = plateColor;
+                        image[x, y] = HeightMapColor(imageData[x, y]);
                     }
                 }
                 image.Save(fileName);
@@ -139,7 +144,7 @@ namespace Resource_Generator
                 }
             }
             int[,] imageData = ScaleData(largerData);
-            SaveImageData(directory + "\\" + fileName + ".png", imageData);
+            SaveImageData(fileName + ".png", imageData);
         }
 
         /// <summary>
@@ -163,16 +168,17 @@ namespace Resource_Generator
         }
 
         /// <summary>
-        /// Opens a data file and outputs a double array of the data, presumed to be heights. Returns
-        /// true if successful, false otherwise.
+        /// Opens a data file and outputs a double array of the data.
         /// </summary>
-        /// <param name="fileName">File Name (not including extension) to open.</param>
-        /// <param name="heights">Output of file data.</param>
-        /// <param name="size">Size of map, as <see cref="PlateLayer._layerSize"/>.</param>
-        /// <returns>Returns true if successful, false otherwise.</returns>
-        public static bool OpenHeightData(string fileName, int xSize, int ySize, out double[,] heights)
+        /// <param name="fileName">Full file name to open.</param>
+        /// <param name="xSize">X size of array.</param>
+        /// <param name="ySize">Y size of array.</param>
+        /// <returns>Output of file data.</returns>
+        /// <exception cref="InvalidDataException">File is not formatted correctly.</exception>
+        /// <exception cref="FileNotFoundException">File could not be found.</exception>
+        public static double[,] OpenDoubleData(string fileName, int xSize, int ySize)
         {
-            heights = new double[xSize, ySize];
+            double[,] data = new double[xSize, ySize];
             try
             {
                 using (BinaryReader reader = new BinaryReader(File.Open(fileName, FileMode.Open)))
@@ -181,15 +187,19 @@ namespace Resource_Generator
                     {
                         for (int y = 0; y < ySize; y++)
                         {
-                            heights[x, y] = reader.ReadDouble();
+                            data[x, y] = reader.ReadDouble();
                         }
                     }
                 }
-                return true;
+                return data;
             }
-            catch (Exception e) when (e is FileNotFoundException || e is NullReferenceException || e is EndOfStreamException)
+            catch (Exception e) when (e is NullReferenceException || e is EndOfStreamException)
             {
-                return false;
+                throw new InvalidDataException("Double data file is not formatted correctly.", e);
+            }
+            catch (FileNotFoundException e)
+            {
+                throw new FileNotFoundException("Data file missing. Can't find double file: " + fileName, e);
             }
         }
 
@@ -198,55 +208,59 @@ namespace Resource_Generator
         /// </summary>
         /// <param name="fileName">File to open.</param>
         /// <param name="rules">Rules for how data will be read.</param>
-        /// <param name="pointData">Data to output.</param>
-        /// <returns>True if successful and data is good, false otherwise.</returns>
-        public static bool OpenPointData(string fileName, GeneralRules rules, out PlatePoint[,] pointData)
+        /// <returns>Data to output.</returns>
+        /// <exception cref="InvalidDataException">File is not formatted correctly.</exception>
+        /// <exception cref="FileNotFoundException">File could not be found.</exception>
+        public static PlatePoint[,] OpenPointData(string fileName, GeneralRules rules)
         {
-            pointData = new PlatePoint[2 * rules.xHalfSize, rules.ySize];
-            if (!CheapBinaryIO.Read(directory + "//" + fileName + plateNumberExtension, rules.plateCount, 2 * rules.xHalfSize, rules.ySize, out int[,] plateNumbers))
-            { return false; }
-            if (!CheapBinaryIO.ReadBinary(directory + "//" + fileName + isContinentalExtension, 2 * rules.xHalfSize, rules.ySize, out bool[,] isContinental))
-            { return false; }
-            if (!CheapBinaryIO.Read(directory + "//" + fileName + birthTimeExtension, rules.currentTime, 2 * rules.xHalfSize, rules.ySize, out int[,] birthTime))
-            { return false; }
-            if (!CheapBinaryIO.Read(directory + "//" + fileName + xBirthPlaceExtension, 2 * rules.xHalfSize, 2 * rules.xHalfSize, rules.ySize, out int[,] xBirthPlace))
-            { return false; }
-            if (!CheapBinaryIO.Read(directory + "//" + fileName + yBirthPlaceExtension, rules.ySize, 2 * rules.xHalfSize, rules.ySize, out int[,] yBirthPlace))
-            { return false; }
-            if (!CheapBinaryIO.Read(directory + "//" + fileName + continentalBuildupExtension, rules.maxBuildup, 2 * rules.xHalfSize, rules.ySize, out int[,] continentalBuildup))
-            { return false; }
-            if (!CheapBinaryIO.Read(directory + "//" + fileName + continentalRecencyExtension, rules.currentTime, 2 * rules.xHalfSize, rules.ySize, out int[,] continentalRecency))
-            { return false; }
-            if (!CheapBinaryIO.Read(directory + "//" + fileName + oceanicBuildupExtension, rules.maxBuildup, 2 * rules.xHalfSize, rules.ySize, out int[,] oceanicBuildup))
-            { return false; }
-            if (!CheapBinaryIO.Read(directory + "//" + fileName + oceanicRecencyExtension, rules.currentTime, 2 * rules.xHalfSize, rules.ySize, out int[,] oceanicRecency))
-            { return false; }
-
-            for (int x = 0; x < 2 * rules.xHalfSize; x++)
+            PlatePoint[,] pointData = new PlatePoint[2 * rules.xHalfSize, rules.ySize];
+            try
             {
-                for (int y = 0; y < rules.ySize; y++)
+                int[,] plateNumbers = CheapBinaryIO.Read(fileName + plateNumberExtension, rules.plateCount, 2 * rules.xHalfSize, rules.ySize);
+                bool[,] isContinental = CheapBinaryIO.ReadBinary(fileName + isContinentalExtension, 2 * rules.xHalfSize, rules.ySize);
+                int[,] birthTime = CheapBinaryIO.Read(fileName + birthTimeExtension, rules.currentTime, 2 * rules.xHalfSize, rules.ySize);
+                int[,] xBirthPlace = CheapBinaryIO.Read(fileName + xBirthPlaceExtension, 2 * rules.xHalfSize, 2 * rules.xHalfSize, rules.ySize);
+                int[,] yBirthPlace = CheapBinaryIO.Read(fileName + yBirthPlaceExtension, rules.ySize, 2 * rules.xHalfSize, rules.ySize);
+                int[,] continentalBuildup = CheapBinaryIO.Read(fileName + continentalBuildupExtension, rules.maxBuildup, 2 * rules.xHalfSize, rules.ySize);
+                int[,] continentalRecency = CheapBinaryIO.Read(fileName + continentalRecencyExtension, rules.currentTime, 2 * rules.xHalfSize, rules.ySize);
+                int[,] oceanicBuildup = CheapBinaryIO.Read(fileName + oceanicBuildupExtension, rules.maxBuildup, 2 * rules.xHalfSize, rules.ySize);
+                int[,] oceanicRecency = CheapBinaryIO.Read(fileName + oceanicRecencyExtension, rules.currentTime, 2 * rules.xHalfSize, rules.ySize);
+
+                for (int x = 0; x < 2 * rules.xHalfSize; x++)
                 {
-                    SimplePoint point = new SimplePoint(x, y);
-                    SimplePoint birthPoint = new SimplePoint(xBirthPlace[x, y], yBirthPlace[x, y]);
-                    BoundaryHistory history = new BoundaryHistory(continentalBuildup[x, y], continentalRecency[x, y], oceanicBuildup[x, y], oceanicRecency[x, y]);
-                    pointData[x, y] = new PlatePoint(point, birthPoint, birthTime[x, y], plateNumbers[x, y], history, isContinental[x, y]);
+                    for (int y = 0; y < rules.ySize; y++)
+                    {
+                        SimplePoint point = new SimplePoint(x, y);
+                        SimplePoint birthPoint = new SimplePoint(xBirthPlace[x, y], yBirthPlace[x, y]);
+                        BoundaryHistory history = new BoundaryHistory(continentalBuildup[x, y], continentalRecency[x, y], oceanicBuildup[x, y], oceanicRecency[x, y]);
+                        pointData[x, y] = new PlatePoint(point, birthPoint, birthTime[x, y], plateNumbers[x, y], history, isContinental[x, y]);
+                    }
                 }
+                return pointData;
             }
-            return true;
+            catch (FileNotFoundException e)
+            {
+                throw new FileNotFoundException("Data file missing. Can't find: " + e.Message, e.InnerException);
+            }
+            catch (Exception e) when (e is NullReferenceException || e is EndOfStreamException)
+            {
+                throw new InvalidDataException("Data file not formatted correctly. See: " + e.Message, e.InnerException);
+            }
         }
 
         /// <summary>
-        /// Opens an image file and returns rules for handling the data and the data.
+        /// Opens an image file and returns the data.
         /// </summary>
         /// <param name="fileName">File to open.</param>
-        /// <param name="data">Data to retrieve.</param>
-        /// <param name="rules">Rules for how the data is processed.</param>
-        /// <returns>True if successful, false otherwise.</returns>
-        public static bool OpenPointImage(string fileName, out int[,] data)
+        /// <returns>Data to retrieve.</returns>
+        /// <exception cref="InvalidDataException">File is not formatted correctly.</exception>
+        /// <exception cref="FileNotFoundException">File could not be found.</exception>
+        public static int[,] OpenPointImage(string fileName)
         {
             try
             {
-                using (Image<Rgba32> image = Image.Load(directory + "\\" + fileName + ".png"))
+                int[,] data;
+                using (Image<Rgba32> image = Image.Load(fileName + ".png"))
                 {
                     data = new int[image.Width, image.Height];
                     List<Rgba32> colorList = new List<Rgba32>();
@@ -272,12 +286,15 @@ namespace Resource_Generator
                         }
                     }
                 }
-                return true;
+                return data;
             }
-            catch (Exception e) when (e is FileNotFoundException || e is NullReferenceException || e is EndOfStreamException)
+            catch (Exception e) when (e is NullReferenceException || e is EndOfStreamException)
             {
-                data = null;
-                return false;
+                throw new InvalidDataException("Image file is not formatted correctly.", e);
+            }
+            catch (FileNotFoundException e)
+            {
+                throw new FileNotFoundException("Data file missing. Can't find image file: " + fileName, e);
             }
         }
 
@@ -289,7 +306,7 @@ namespace Resource_Generator
         public static void SaveHeightImage(string fileName, double[,] heightData)
         {
             int[,] imageData = ScaleData(heightData);
-            SaveImageData(directory + "\\" + fileName + ".png", imageData);
+            SaveImageData(fileName + ".png", imageData);
         }
 
         /// <summary>
@@ -340,14 +357,15 @@ namespace Resource_Generator
                     oceanicRecency[x, y] = pointData[x, y].History.OceanicRecency;
                 }
             }
-            CheapBinaryIO.Write(directory + "//" + fileName + plateNumberExtension, plateNumbers, rules.plateCount);
-            CheapBinaryIO.Write(directory + "//" + fileName + xBirthPlaceExtension, xBirthPlace, 2 * rules.xHalfSize);
-            CheapBinaryIO.Write(directory + "//" + fileName + yBirthPlaceExtension, yBirthPlace, rules.ySize);
-            CheapBinaryIO.WriteBinary(directory + "//" + fileName + isContinentalExtension, isContinental);
-            CheapBinaryIO.Write(directory + "//" + fileName + continentalBuildupExtension, continentalBuildup, rules.maxBuildup);
-            CheapBinaryIO.Write(directory + "//" + fileName + continentalRecencyExtension, continentalRecency, rules.currentTime);
-            CheapBinaryIO.Write(directory + "//" + fileName + oceanicBuildupExtension, oceanicBuildup, rules.maxBuildup);
-            CheapBinaryIO.Write(directory + "//" + fileName + oceanicRecencyExtension, oceanicRecency, rules.currentTime);
+            CheapBinaryIO.Write(fileName + plateNumberExtension, plateNumbers, rules.plateCount);
+            CheapBinaryIO.Write(fileName + xBirthPlaceExtension, xBirthPlace, 2 * rules.xHalfSize);
+            CheapBinaryIO.Write(fileName + yBirthPlaceExtension, yBirthPlace, rules.ySize);
+            CheapBinaryIO.Write(fileName + birthTimeExtension, birthDate, rules.ySize);
+            CheapBinaryIO.WriteBinary(fileName + isContinentalExtension, isContinental);
+            CheapBinaryIO.Write(fileName + continentalBuildupExtension, continentalBuildup, rules.maxBuildup);
+            CheapBinaryIO.Write(fileName + continentalRecencyExtension, continentalRecency, rules.currentTime);
+            CheapBinaryIO.Write(fileName + oceanicBuildupExtension, oceanicBuildup, rules.maxBuildup);
+            CheapBinaryIO.Write(fileName + oceanicRecencyExtension, oceanicRecency, rules.currentTime);
         }
 
         /// <summary>
@@ -387,7 +405,7 @@ namespace Resource_Generator
                     }
                 }
             }
-            CheapBinaryIO.Write(directory + "//" + fileName + plateNumberExtension, pointPlateData, plateCount);
+            CheapBinaryIO.Write(fileName + plateNumberExtension, pointPlateData, plateCount);
         }
     }
 }

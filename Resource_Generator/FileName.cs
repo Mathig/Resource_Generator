@@ -8,17 +8,33 @@ namespace Resource_Generator
     internal struct FileName
     {
         /// <summary>
-        /// Name of file
+        /// Name of file.
         /// </summary>
-        public readonly string name;
+        private readonly string _name;
+
+        /// <summary>
+        /// Directory for files.
+        /// </summary>
+        public static string directory;
 
         /// <summary>
         /// Constructor
         /// </summary>
-        /// <param name="inName">See <see cref="name"/>.</param>
+        /// <param name="inName">See <see cref="_name"/>.</param>
         public FileName(string inName)
         {
-            name = inName;
+            _name = inName;
+        }
+
+        /// <summary>
+        /// Public file name which includes the directory.
+        /// </summary>
+        public string Name
+        {
+            get
+            {
+                return (directory + "\\" + _name);
+            }
         }
 
         /// <summary>
@@ -26,16 +42,16 @@ namespace Resource_Generator
         /// </summary>
         /// <param name="inString">String to test.</param>
         /// <returns>True if valid, false otherwise.</returns>
-        public bool IsValid()
+        /// <exception cref="FormatException">Yields exception if the file name is invalid.</exception>
+        public void CheckValidity()
         {
-            foreach (char iChar in name)
+            foreach (char iChar in _name)
             {
                 if (!(Char.IsLetterOrDigit(iChar) || iChar.Equals('_')))
                 {
-                    return false;
+                    throw new FormatException("File name is invalid. ");
                 }
             }
-            return true;
         }
     }
 }

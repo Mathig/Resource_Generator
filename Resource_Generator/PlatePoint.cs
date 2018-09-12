@@ -77,7 +77,7 @@ namespace Resource_Generator
         /// <param name="point">Point to copy.</param>
         public PlatePoint(PlatePoint inPoint)
         {
-            point = inPoint.point;
+            point = new BasePoint(inPoint.point);
             PlateNumber = inPoint.PlateNumber;
             _birthDate = inPoint._birthDate;
             _birthPlace = inPoint._birthPlace;
@@ -121,6 +121,38 @@ namespace Resource_Generator
             {
                 return point.Y;
             }
+        }
+
+        /// <summary>
+        /// Finds all points within range of the given point.
+        /// </summary>
+        /// <param name="leftPoint">Left point to check from.</param>
+        /// <param name="rightPoint">Right point to check to.</param>
+        /// <param name="centerPoint">Center point to avoid.</param>
+        /// <returns>List of points in range excluding the center point.</returns>
+        private static List<SimplePoint> FindAllPoints(BasePoint leftPoint, BasePoint rightPoint, SimplePoint centerPoint)
+        {
+            List<SimplePoint> listPoints = new List<SimplePoint>();
+            List<int> validXs = new List<int>();
+            SimplePoint nextPoint = new SimplePoint(leftPoint.X, leftPoint.Y);
+            while (nextPoint.X != rightPoint.X)
+            {
+                nextPoint.FindLeftRightPoints(out _, out nextPoint);
+                validXs.Add(nextPoint.X);
+            }
+            if (validXs.Count < 2)
+            {
+                return listPoints;
+            }
+            int newY = centerPoint.Y;
+            for (int x = 0; x < validXs.Count - 1; x++)
+            {
+                if (validXs[x] != centerPoint.X)
+                {
+                    listPoints.Add(new SimplePoint(validXs[x], newY));
+                }
+            }
+            return listPoints;
         }
 
         /// <summary>
@@ -219,13 +251,12 @@ namespace Resource_Generator
         }
 
         /// <summary>
-        /// Determines the points above and below this point, including wrap-arounds.
+        /// Returns neighboring points in an array ordered as above, below, left, then right.
         /// </summary>
-        /// <param name="abovePoint">The point above this point.</param>
-        /// <param name="belowPoint">The point below this point.</param>
-        public void FindAboveBelowPoints(out SimplePoint abovePoint, out SimplePoint belowPoint)
+        /// <returns>Neighbor points.</returns>
+        public SimplePoint[] FindNeighborPoints()
         {
-            point.FindAboveBelowPoints(out abovePoint, out belowPoint);
+            return point.FindNeighborPoints();
         }
 
         /// <summary>
@@ -233,9 +264,11 @@ namespace Resource_Generator
         /// </summary>
         /// <param name="leftPoint">The point to the left of this point.</param>
         /// <param name="rightPoint">The point to the right of this point.</param>
-        public void FindLeftRightPoints(out SimplePoint leftPoint, out SimplePoint rightPoint)
+        public void FindLeftRightPoints(out BasePoint leftPoint, out BasePoint rightPoint)
         {
-            point.FindLeftRightPoints(out leftPoint, out rightPoint);
+            point.FindLeftRightPoints(out SimplePoint sleftPoint, out SimplePoint srightPoint);
+            leftPoint = new BasePoint(sleftPoint);
+            rightPoint = new BasePoint(srightPoint);
         }
 
         /// <summary>
@@ -292,12 +325,44 @@ namespace Resource_Generator
         }
 
         /// <summary>
-        /// Moves point by a given rotation.
+        /// Moves point by a given rotation, returning bonus points if necessary.
         /// </summary>
         /// <param name="angle">Three dimensional angle for rotation, given in radians.</param>
-        public void Transform(double[] angle)
+        /// <param name="bonusPoints">Additional points to add.</param>
+        /// <returns>True if there are bonus points, otherwise false.</returns>
+        public bool Transform(double[] angle, out List<SimplePoint> bonusPoints, int ySize)
         {
-            point = new BasePoint(point.Transform(angle));
+            bonusPoints = new List<SimplePoint>();
+            SimplePoint tempPoint = point.Transform(angle);
+            if (tempPoint.Y == Y)
+            {
+                point = new BasePoint(tempPoint);
+                return false;
+            }
+            int yVar = Math.Abs(ySize / 2 - tempPoint.Y) - Math.Abs(ySize / 2 - Y);
+            if (yVar < 0)
+            {
+                point = new BasePoint(tempPoint);
+                return false;
+            }
+            FindLeftRightPoints(out BasePoint leftPoint, out BasePoint rightPoint);
+            leftPoint = new BasePoint(leftPoint.Transform(angle));
+            rightPoint = new BasePoint(rightPoint.Transform(angle));
+            leftPoint.FindLeftRightPoints(out _, out SimplePoint leftValue);
+            rightPoint.FindLeftRightPoints(out SimplePoint rightValue, out _);
+            if (tempPoint.CompareTo(leftValue) == 0 && tempPoint.CompareTo(rightValue) == 0)
+            {
+                point = new BasePoint(tempPoint);
+                return false;
+            }
+            bonusPoints = FindAllPoints(leftPoint, rightPoint, tempPoint);
+            if (bonusPoints.Count > 0)
+            {
+                point = new BasePoint(tempPoint);
+                return true;
+            }
+            point = new BasePoint(tempPoint);
+            return false;
         }
     }
 }

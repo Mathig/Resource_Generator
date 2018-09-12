@@ -116,34 +116,15 @@ namespace Resource_Generator
         private static double CalculateWaterFlow(SimplePoint iPoint)
         {
             double water = rainWater[iPoint.X, iPoint.Y];
-            iPoint.FindAboveBelowPoints(out SimplePoint abovePoint, out SimplePoint belowPoint);
-            iPoint.FindLeftRightPoints(out SimplePoint leftPoint, out SimplePoint rightPoint);
-            if (FindLowestNeighbor(abovePoint, out SimplePoint testPoint))
+            SimplePoint[] nearPoints = iPoint.FindNeighborPoints();
+            for (int i = 0; i < nearPoints.Length; i++)
             {
-                if (iPoint.CompareTo(testPoint) == 0)
+                if (FindLowestNeighbor(nearPoints[i], out SimplePoint testPoint))
                 {
-                    water += waterFlow[testPoint.X, testPoint.Y];
-                }
-            }
-            if (FindLowestNeighbor(belowPoint, out testPoint))
-            {
-                if (iPoint.CompareTo(testPoint) == 0)
-                {
-                    water += waterFlow[testPoint.X, testPoint.Y];
-                }
-            }
-            if (FindLowestNeighbor(leftPoint, out testPoint))
-            {
-                if (iPoint.CompareTo(testPoint) == 0)
-                {
-                    water += waterFlow[testPoint.X, testPoint.Y];
-                }
-            }
-            if (FindLowestNeighbor(rightPoint, out testPoint))
-            {
-                if (iPoint.CompareTo(testPoint) == 0)
-                {
-                    water += waterFlow[testPoint.X, testPoint.Y];
+                    if (iPoint.CompareTo(testPoint) == 0)
+                    {
+                        water += waterFlow[testPoint.X, testPoint.Y];
+                    }
                 }
             }
             return water;
@@ -219,31 +200,15 @@ namespace Resource_Generator
             outPoint = inPoint;
             bool notCenter = false;
             double lowestHeight = heightMap[inPoint.X, inPoint.Y];
-            inPoint.FindAboveBelowPoints(out SimplePoint abovePoint, out SimplePoint belowPoint);
-            inPoint.FindLeftRightPoints(out SimplePoint leftPoint, out SimplePoint rightPoint);
-            if (heightMap[abovePoint.X, abovePoint.Y] < lowestHeight)
+            SimplePoint[] neighborPoints = inPoint.FindNeighborPoints();
+            for (int i = 0; i < neighborPoints.Length; i++)
             {
-                lowestHeight = heightMap[abovePoint.X, abovePoint.Y];
-                outPoint = abovePoint;
-                notCenter = true;
-            }
-            if (heightMap[belowPoint.X, belowPoint.Y] < lowestHeight)
-            {
-                lowestHeight = heightMap[belowPoint.X, belowPoint.Y];
-                outPoint = belowPoint;
-                notCenter = true;
-            }
-            if (heightMap[leftPoint.X, leftPoint.Y] < lowestHeight)
-            {
-                lowestHeight = heightMap[leftPoint.X, leftPoint.Y];
-                outPoint = leftPoint;
-                notCenter = true;
-            }
-            if (heightMap[rightPoint.X, rightPoint.Y] < lowestHeight)
-            {
-                lowestHeight = heightMap[rightPoint.X, rightPoint.Y];
-                outPoint = rightPoint;
-                notCenter = true;
+                if (heightMap[neighborPoints[i].X, neighborPoints[i].Y] < lowestHeight)
+                {
+                    lowestHeight = heightMap[neighborPoints[i].X, neighborPoints[i].Y];
+                    outPoint = neighborPoints[i];
+                    notCenter = true;
+                }
             }
             return notCenter;
         }

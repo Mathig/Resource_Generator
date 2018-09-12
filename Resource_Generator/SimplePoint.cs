@@ -108,6 +108,34 @@ namespace Resource_Generator
                 throw new ArgumentException("Object is not a SimplePoint.");
             }
         }
+        /// <summary>
+        /// Returns neighboring points in an array ordered as above, below, left, then right.
+        /// </summary>
+        /// <returns>Array of neighboring points.</returns>
+        public SimplePoint[] FindNeighborPoints()
+        {
+            SimplePoint[] output = new SimplePoint[4];
+            this.FindAboveBelowPoints(out output[0], out output[1]);
+            this.FindLeftRightPoints(out output[2], out output[3]);
+            return output;
+        }
+
+        /// <summary>
+        /// Finds the x value for wraping around the vertical boundary conditions, ie the top or
+        /// bottom poles.
+        /// </summary>
+        /// <returns>The x value for a point that wraps around the boundary conditions.</returns>
+        private int PoleBoundaryXWrap()
+        {
+            if (_x >= _halfMapXSize)
+            {
+                return (_x - _halfMapXSize);
+            }
+            else
+            {
+                return (_x + _halfMapXSize);
+            }
+        }
 
         /// <summary>
         /// Determines the points above and below this point, including wrap-arounds.
@@ -118,27 +146,13 @@ namespace Resource_Generator
         {
             if (_y == 0)
             {
-                if (_x >= _halfMapXSize)
-                {
-                    abovePoint = new SimplePoint(_x - _halfMapXSize, _y);
-                }
-                else
-                {
-                    abovePoint = new SimplePoint(_x + _halfMapXSize, _y);
-                }
+                abovePoint = new SimplePoint(PoleBoundaryXWrap(), _y);
                 belowPoint = new SimplePoint(_x, _y + 1);
             }
             else if (_y == _mapYSize - 1)
             {
                 abovePoint = new SimplePoint(_x, _y - 1);
-                if (_x >= _halfMapXSize)
-                {
-                    belowPoint = new SimplePoint(_x - _halfMapXSize, _y);
-                }
-                else
-                {
-                    belowPoint = new SimplePoint(_x + _halfMapXSize, _y);
-                }
+                belowPoint = new SimplePoint(PoleBoundaryXWrap(), _y);
             }
             else
             {

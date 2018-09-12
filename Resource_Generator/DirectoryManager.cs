@@ -146,21 +146,21 @@ namespace Resource_Generator
                 file.WriteLine("<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"yes\"?>");
                 file.WriteLine("<root>");
                 file.WriteLine("<General Plate_Count = \"10\" X_Half_Size = \"1000\" Y_Size = \"1000\" Current_Time = \"0\" Max_Buildup = \"0\"/>");
-                file.WriteLine("<MoveRules Overlap_Factor = \"0.6\" Time_Step = \"1\"/>");
+                file.WriteLine("<MoveRules Overlap_Factor = \"0.6\" Time_Step = \"1\" Number_Steps = \"10\"/>");
                 file.WriteLine("</root>");
             }
             using (StreamWriter file = new StreamWriter(directory + "\\GenerateAltitudeRules.xml", false))
             {
                 file.WriteLine("<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"yes\"?>");
                 file.WriteLine("<root>");
-                file.WriteLine("<General Plate_Count = \"10\" X_Half_Size = \"1000\" Y_Size = \"1000\" Current_Time = \"0\" Max_Buildup = \"0\"/>");
+                file.WriteLine("<General Plate_Count = \"10\" X_Half_Size = \"1000\" Y_Size = \"1000\" Current_Time = \"10\" Max_Buildup = \"0\"/>");
                 file.WriteLine("</root>");
             }
             using (StreamWriter file = new StreamWriter(directory + "\\GenerateRainfallRules.xml", false))
             {
                 file.WriteLine("<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"yes\"?>");
                 file.WriteLine("<root>");
-                file.WriteLine("<General Plate_Count = \"10\" X_Half_Size = \"1000\" Y_Size = \"1000\" Current_Time = \"0\" Max_Buildup = \"0\"/>");
+                file.WriteLine("<General Plate_Count = \"10\" X_Half_Size = \"1000\" Y_Size = \"1000\" Current_Time = \"1\" Max_Buildup = \"0\"/>");
                 file.WriteLine("<Rainfall Axis_Tilt = \"10\" Number_of_Seasons = \"4\" Ocean_Weight = \"0.125\" Altitude_Weight = \"0.001\" Land_Weight = \"5\"/>");
                 file.WriteLine("</root>");
             }
@@ -168,7 +168,7 @@ namespace Resource_Generator
             {
                 file.WriteLine("<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"yes\"?>");
                 file.WriteLine("<root>");
-                file.WriteLine("<General Plate_Count = \"10\" X_Half_Size = \"1000\" Y_Size = \"1000\" Current_Time = \"0\" Max_Buildup = \"0\"/>");
+                file.WriteLine("<General Plate_Count = \"10\" X_Half_Size = \"1000\" Y_Size = \"1000\" Current_Time = \"1\" Max_Buildup = \"0\"/>");
                 file.WriteLine("<Erosion Number_of_Seasons = \"4\" Water_Threshold = \"0.1\"/>");
                 file.WriteLine("</root>");
             }
@@ -181,7 +181,7 @@ namespace Resource_Generator
                 {
                     double angleOne = i * Math.PI / 4.5;
                     angleOne = Math.Round(angleOne, 3);
-                    file.WriteLine("<Plate Plate_Index = \"" + i.ToString() + "\" Speed = \"0.02\" DirectionOne = \"" + (angleOne).ToString() + "\" DirectionTwo = \"" + (angleOne).ToString() + "\"/>");
+                    file.WriteLine("<Plate Plate_Index = \"" + i.ToString() + "\" Speed = \"0.02\" Direction_One = \"" + (angleOne).ToString() + "\" Direction_Two = \"" + (angleOne).ToString() + "\"/>");
                 }
                 file.WriteLine("</root>");
             }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -40,42 +41,65 @@ namespace Resource_Generator
         private static List<SimplePoint> temporaryPoints;
 
         /// <summary>
-        /// Scans for all points in <see cref="pointActives"/> that are set to true and are
-        /// contiguously adjacent to the given point and adds them to <see cref="temporaryPoints"/>,
-        /// setting the <see cref="pointActives"/> to false in the process.
+        /// Adds border point to point queue.
         /// </summary>
-        /// <param name="startingPoint">Starting point to check neighbors.</param>
-        private static void CheckNeighbor(SimplePoint startingPoint)
+        /// <param name="pointQueue">Point queue to add to.</param>
+        /// <param name="iPoint">Point to add.</param>
+        private static void AddBorderPoint(ConcurrentQueue<OverlapPoint> pointQueue, OverlapPoint iPoint)
         {
-            Stack<SimplePoint> pointStack = new Stack<SimplePoint>();
-            pointActives[startingPoint.X, startingPoint.Y] = false;
-            pointStack.Push(startingPoint);
-            while (pointStack.Count != 0)
+            pointActives[iPoint.X, iPoint.Y] = true;
+            platePoints[iPoint.plateIndex[0]].Add(new SimplePoint(iPoint.X, iPoint.Y));
+        }
+
+        /// <summary>
+        /// Checks points near input point and adds border points to point queue.
+        /// </summary>
+        /// <param name="pointQueue">Queue to add border points to.</param>
+        /// <param name="iPoint">Point to check around.</param>
+        /// <param name="plateIndex">Index of plate.</param>
+        private static void CheckBorderPoints(ConcurrentQueue<OverlapPoint> pointQueue, IPoint iPoint, int plateIndex)
+        {
+            SimplePoint[] newPoints = iPoint.FindNeighborPoints();
+            foreach (SimplePoint newSimplePoint in newPoints)
             {
-                SimplePoint point = pointStack.Pop();
-                temporaryPoints.Add(point);
-                SimplePoint[] newPoints = new SimplePoint[4];
-                point.FindLeftRightPoints(out newPoints[0], out newPoints[1]);
-                point.FindAboveBelowPoints(out newPoints[2], out newPoints[3]);
-                for (int i = 0; i < 4; i++)
+                if (!pointActives[newSimplePoint.X, newSimplePoint.Y])
                 {
-                    if (pointActives[newPoints[i].X, newPoints[i].Y])
-                    {
-                        pointActives[newPoints[i].X, newPoints[i].Y] = false;
-                        pointStack.Push(newPoints[i]);
-                    }
+                    OverlapPoint newPoint = new OverlapPoint(newSimplePoint, plateIndex);
+                    pointQueue.Enqueue(newPoint);
                 }
             }
         }
 
+        /// <summary>
+        /// Checks neighboring points in <see cref="pointActives"/> and adds to pointStack.
+        /// </summary>
+        /// <param name="iPoint">Point to check neighbors for.</param>
+        /// <param name="pointStack">Stack to add appropriate points to stack.</param>
+        private static void CheckNeighbor(SimplePoint iPoint, Stack<SimplePoint> pointStack)
+        {
+            SimplePoint[] newPoints = iPoint.FindNeighborPoints();
+            foreach (SimplePoint newPoint in newPoints)
+            {
+                if (pointActives[newPoint.X, newPoint.Y])
+                {
+                    pointActives[newPoint.X, newPoint.Y] = false;
+                    pointStack.Push(newPoint);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Converts plate sorted plate point data into a map array.
+        /// </summary>
+        /// <returns>Map array of plate point data.</returns>
         private static PlatePoint[,] CompileData()
         {
             PlatePoint[,] output = new PlatePoint[2 * rules.xHalfSize, rules.ySize];
             Parallel.For(0, (rules.plateCount), (i) =>
             {
-                for (int j = 0; j < platePoints[i].Count; j++)
+                foreach (SimplePoint iPoint in platePoints[i])
                 {
-                    output[platePoints[i][j].X, platePoints[i][j].Y] = new PlatePoint(platePoints[i][j], i, rules.currentTime);
+                    output[iPoint.X, iPoint.Y] = new PlatePoint(iPoint, i, rules.currentTime);
                 }
             });
             return output;
@@ -84,8 +108,9 @@ namespace Resource_Generator
         /// <summary>
         /// Starts up and allocates data arrays.
         /// </summary>
-        private static void ConstructData()
+        private static void ConstructData(GenerateRules inRules)
         {
+            rules = inRules;
             BasePoint.MapSetup(rules.xHalfSize, rules.ySize);
             pointMap = new BasePoint[2 * rules.xHalfSize, rules.ySize];
             pointMagnitudes = new double[2 * rules.xHalfSize, rules.ySize];
@@ -95,7 +120,6 @@ namespace Resource_Generator
             {
                 platePoints[i] = new List<SimplePoint>();
             }
-            temporaryPoints = new List<SimplePoint>();
             Parallel.For(0, (2 * rules.xHalfSize), (x) =>
             {
                 for (int y = 0; y < rules.ySize; y++)
@@ -116,11 +140,68 @@ namespace Resource_Generator
             int k = 0;
             foreach (double pointMagnitude in pointMagnitudes)
             {
-                output[k] = pointMagnitude;
-                k++;
+                output[k++] = pointMagnitude;
             }
             Array.Sort(output);
             return output[rules.cutOff];
+        }
+
+        /// <summary>
+        /// Deallocates data arrays.
+        /// </summary>
+        private static void DeconstructData()
+        {
+            rules = null;
+            pointMap = null;
+            pointMagnitudes = null;
+            pointActives = null;
+            platePoints = null;
+            GC.Collect();
+        }
+
+        /// <summary>
+        /// Checks a border point in point queue.
+        /// </summary>
+        /// <param name="pointQueue">Point queue to withdraw point from.</param>
+        /// <param name="borderPoint">Border point to dequeue and check.</param>
+        /// <returns>True if still valid border point, otherwise false.</returns>
+        private static bool DequeueBorderPoint(ConcurrentQueue<OverlapPoint> pointQueue, out OverlapPoint borderPoint)
+        {
+            if (pointQueue.TryDequeue(out borderPoint))
+            {
+                if (!pointActives[borderPoint.X, borderPoint.Y])
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Distributes a circle point about a given point.
+        /// </summary>
+        /// <param name="centerPoint">Center of circle.</param>
+        /// <param name="radius">Radius of circle.</param>
+        /// <param name="magnitude">Weight of point to be added.</param>
+        /// <param name="radiusSquared">Square of the radius, for computational efficiency.</param>
+        private static void DistributeCircle(BasePoint centerPoint, double radius, double magnitude, double radiusSquared)
+        {
+            centerPoint.Range(radius, out int xMin, out int xMax, out int yMin, out int yMax);
+            for (int xP = xMin; xP < xMax; xP++)
+            {
+                int x = xP;
+                if (x >= 2 * rules.xHalfSize)
+                {
+                    x -= 2 * rules.xHalfSize;
+                }
+                for (int y = yMin; y < yMax; y++)
+                {
+                    if (centerPoint.Distance(pointMap[x, y]) < radiusSquared)
+                    {
+                        pointMagnitudes[x, y] += magnitude;
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -134,22 +215,7 @@ namespace Resource_Generator
             double radiusSquared = radius * radius;
             Parallel.For(0, (points.Count), (i) =>
             {
-                points[i].Range(radius, out int xMin, out int xMax, out int yMin, out int yMax);
-                for (int xP = xMin; xP < xMax; xP++)
-                {
-                    int x = xP;
-                    if (x >= 2 * rules.xHalfSize)
-                    {
-                        x -= 2 * rules.xHalfSize;
-                    }
-                    for (int y = yMin; y < yMax; y++)
-                    {
-                        if (points[i].Distance(pointMap[x, y]) < radiusSquared)
-                        {
-                            pointMagnitudes[x, y] += magnitude;
-                        }
-                    }
-                }
+                DistributeCircle(points[i], radius, magnitude, radiusSquared);
             });
         }
 
@@ -158,43 +224,78 @@ namespace Resource_Generator
         /// </summary>
         private static void ExpandPlates()
         {
-            Queue<OverlapPoint> borderPoints = new Queue<OverlapPoint>();
-            for (int i = 0; i < rules.plateCount; i++)
+            ConcurrentQueue<OverlapPoint> borderPoints = new ConcurrentQueue<OverlapPoint>();
+            Parallel.For(0, platePoints.Length, (i) =>
             {
-                for (int j = 0; j < platePoints[i].Count; j++)
-                {
-                    SimplePoint[] newPoints = new SimplePoint[4];
-                    platePoints[i][j].FindLeftRightPoints(out newPoints[0], out newPoints[1]);
-                    platePoints[i][j].FindAboveBelowPoints(out newPoints[2], out newPoints[3]);
-                    for (int k = 0; k < 4; k++)
-                    {
-                        if (!pointActives[newPoints[k].X, newPoints[k].Y])
-                        {
-                            borderPoints.Enqueue(new OverlapPoint(newPoints[k], i));
-                        }
-                    }
-                }
-            }
+                FindPlateBorders(platePoints[i], borderPoints);
+            });
             while (borderPoints.Count != 0)
             {
-                OverlapPoint borderPoint = borderPoints.Dequeue();
-                if (!pointActives[borderPoint.X, borderPoint.Y])
+                if (DequeueBorderPoint(borderPoints, out OverlapPoint borderPoint))
                 {
-                    pointActives[borderPoint.X, borderPoint.Y] = true;
-                    platePoints[borderPoint.plateIndex[0]].Add(new SimplePoint(borderPoint.X, borderPoint.Y));
-                    SimplePoint[] newPointsP = new SimplePoint[4];
-                    borderPoint.FindLeftRightPoints(out newPointsP[0], out newPointsP[1]);
-                    borderPoint.FindAboveBelowPoints(out newPointsP[2], out newPointsP[3]);
-                    for (int k = 0; k < 4; k++)
-                    {
-                        if (!pointActives[newPointsP[k].X, newPointsP[k].Y])
-                        {
-                            OverlapPoint newPoint = new OverlapPoint(newPointsP[k], borderPoint.plateIndex[0]);
-                            borderPoints.Enqueue(newPoint);
-                        }
-                    }
+                    AddBorderPoint(borderPoints, borderPoint);
+                    CheckBorderPoints(borderPoints, borderPoint, borderPoint.plateIndex[0]);
                 }
             }
+        }
+
+        /// <summary>
+        /// Scans for all points in <see cref="pointActives"/> that are set to true and are
+        /// contiguously adjacent to the given point and adds them to <see cref="temporaryPoints"/>,
+        /// setting the <see cref="pointActives"/> to false in the process.
+        /// </summary>
+        /// <param name="startingPoint">Starting point to check neighbors.</param>
+        private static void FindContiguousPoints(SimplePoint startingPoint)
+        {
+            Stack<SimplePoint> pointStack = new Stack<SimplePoint>();
+            pointActives[startingPoint.X, startingPoint.Y] = false;
+            pointStack.Push(startingPoint);
+            while (pointStack.Count != 0)
+            {
+                SimplePoint point = pointStack.Pop();
+                temporaryPoints.Add(point);
+                CheckNeighbor(point, pointStack);
+            }
+        }
+
+        /// <summary>
+        /// Finds points on plate boundaries.
+        /// </summary>
+        /// <param name="iPlatePoints">List of plate points.</param>
+        /// <param name="pointQueue">Plate Point queue to add to.</param>
+        private static void FindPlateBorders(List<SimplePoint> iPlatePoints, ConcurrentQueue<OverlapPoint> pointQueue)
+        {
+            for (int i = 0; i < iPlatePoints.Count; i++)
+            {
+                CheckBorderPoints(pointQueue, iPlatePoints[i], i);
+            }
+        }
+
+        /// <summary>
+        /// Finds valid plate to replace or populate with new data from <see cref="temporaryPoints"/>.
+        /// </summary>
+        /// <param name="oldPlateList">Old plate, if it exists.</param>
+        /// <returns>True if successful, otherwise false.</returns>
+        private static bool FindReplaceablePlate(out List<SimplePoint> oldPlateList)
+        {
+            foreach (List<SimplePoint> pointList in platePoints)
+            {
+                if (pointList.Count == 0)
+                {
+                    oldPlateList = pointList;
+                    return true;
+                }
+            }
+            foreach (List<SimplePoint> pointList in platePoints)
+            {
+                if (pointList.Count < temporaryPoints.Count)
+                {
+                    oldPlateList = pointList;
+                    return true;
+                }
+            }
+            oldPlateList = null;
+            return false;
         }
 
         /// <summary>
@@ -240,45 +341,24 @@ namespace Resource_Generator
         }
 
         /// <summary>
-        /// Uses <see cref="CheckNeighbor"/> to generate a plate starting at the given point, and
+        /// Uses <see cref="FindContiguousPoints"/> to generate a plate starting at the given point, and
         /// transfers it to <see cref="platePoints"/> if there is an empty plate or the plate is
         /// larger than the smallest existing plate.
         /// </summary>
         /// <param name="inPoint">Starting Point.</param>
         private static void PlateMaker(SimplePoint inPoint)
         {
-            if (temporaryPoints != null)
-            {
-                temporaryPoints.Clear();
-            }
+            temporaryPoints = new List<SimplePoint>();
             if (pointActives[inPoint.X, inPoint.Y])
             {
-                CheckNeighbor(inPoint);
-                foreach (List<SimplePoint> pointList in platePoints)
+                FindContiguousPoints(inPoint);
+                if (FindReplaceablePlate(out List<SimplePoint> oldPlateList))
                 {
-                    if (pointList.Count == 0)
-                    {
-                        pointList.Clear();
-                        foreach (SimplePoint iPoint in temporaryPoints)
-                        {
-                            pointList.Add(iPoint);
-                        }
-                        return;
-                    }
-                }
-                foreach (List<SimplePoint> pointList in platePoints)
-                {
-                    if (pointList.Count < temporaryPoints.Count)
-                    {
-                        pointList.Clear();
-                        foreach (SimplePoint iPoint in temporaryPoints)
-                        {
-                            pointList.Add(iPoint);
-                        }
-                        return;
-                    }
+                    ReplacePlate(oldPlateList);
                 }
             }
+            temporaryPoints = null;
+            return;
         }
 
         /// <summary>
@@ -307,19 +387,33 @@ namespace Resource_Generator
         }
 
         /// <summary>
+        /// Replaces target plate list with <see cref="temporaryPoints"/>.
+        /// </summary>
+        /// <param name="targetPlateList">Plate list to replace at.</param>
+        private static void ReplacePlate(List<SimplePoint> targetPlateList)
+        {
+            targetPlateList.Clear();
+            foreach (SimplePoint iPoint in temporaryPoints)
+            {
+                targetPlateList.Add(iPoint);
+            }
+        }
+
+        /// <summary>
         /// Generates Plates
         /// </summary>
         /// <param name="inRules">Rules to run generation.</param>
         /// <returns>Plate points.</returns>
         public static PlatePoint[,] Run(GenerateRules inRules)
         {
-            rules = inRules;
-            ConstructData();
+            ConstructData(inRules);
             NoiseGenerator();
             NoiseFilter(CutoffMagnitude());
             PlateMaking();
             ExpandPlates();
-            return CompileData();
+            PlatePoint[,] output = CompileData();
+            DeconstructData();
+            return output;
         }
     }
 }

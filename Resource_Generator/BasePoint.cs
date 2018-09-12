@@ -66,6 +66,18 @@ namespace Resource_Generator
         }
 
         /// <summary>
+        /// Clone Constructor for the Base Point.
+        /// </summary>
+        /// <param name="inPoint">Input Point.</param>
+        public BasePoint(BasePoint inPoint)
+        {
+            _position = inPoint._position;
+            _theta = _position.X * _dTheta;
+            _cosPhi = Math.Cos((_position.Y * _dPhi) + _phiShift);
+            _sinPhi = Math.Sin((_position.Y * _dPhi) + _phiShift);
+        }
+
+        /// <summary>
         /// Constructor for the Base Point. Takes in a Simple Point structure.
         /// </summary>
         /// <param name="inPoint">Input Point.</param>
@@ -110,10 +122,12 @@ namespace Resource_Generator
         /// <returns>Position of rotated point.</returns>
         private static double[] AxisRotation(double xIn, double yIn, double zIn, double cosAngle, double sinAngle)
         {
-            double[] rotatedPoint = new double[3];
-            rotatedPoint[0] = xIn * cosAngle - yIn * sinAngle;
-            rotatedPoint[1] = xIn * sinAngle + yIn * cosAngle;
-            rotatedPoint[2] = zIn;
+            double[] rotatedPoint =
+            {
+                xIn * cosAngle - yIn * sinAngle,
+                xIn * sinAngle + yIn * cosAngle,
+                zIn
+            };
             return rotatedPoint;
         }
 
@@ -125,18 +139,22 @@ namespace Resource_Generator
         /// <returns>Point rotated about 3 axis.</returns>
         private static double[] CartesianRotation(double[] pointIn, double[] angle)
         {
-            double[] pointOut = new double[3];
             double cosAngleX = Math.Cos(angle[0]);
             double sinAngleX = Math.Sin(angle[0]);
             double cosAngleY = Math.Cos(angle[1]);
             double sinAngleY = Math.Sin(angle[1]);
-
-            pointOut = AxisRotation(pointOut[1], pointOut[2], pointOut[0], cosAngleX, sinAngleX);
-            pointOut = AxisRotation(pointOut[0], pointOut[2], pointOut[1], cosAngleY, sinAngleY);
+            double[] pointOut = pointIn;//x y z
+            pointOut = new double[] { pointOut[1], pointOut[2], pointOut[0] };//y z x
+            pointOut = AxisRotation(pointOut[0], pointOut[1], pointOut[2], cosAngleX, sinAngleX);//Rotate about x
+            pointOut = new double[] { pointOut[1], pointOut[2], pointOut[0] };//z x y
+            pointOut = AxisRotation(pointOut[0], pointOut[1], pointOut[2], cosAngleY, sinAngleY);
+            pointOut = new double[] { pointOut[1], pointOut[2], pointOut[0] };//x y z
             pointOut = AxisRotation(pointOut[0], pointOut[1], pointOut[2], Math.Cos(angle[2]), Math.Sin(angle[2]));
-            pointOut = AxisRotation(pointOut[0], pointOut[2], pointOut[1], cosAngleY, -1 * sinAngleY);
-            pointOut = AxisRotation(pointOut[1], pointOut[2], pointOut[0], cosAngleX, -1 * sinAngleX);
-
+            pointOut = new double[] { pointOut[2], pointOut[0], pointOut[1] };//z x y
+            pointOut = AxisRotation(pointOut[0], pointOut[1], pointOut[2], cosAngleY, -1 * sinAngleY);
+            pointOut = new double[] { pointOut[2], pointOut[0], pointOut[1] };//y z x
+            pointOut = AxisRotation(pointOut[0], pointOut[1], pointOut[2], cosAngleX, -1 * sinAngleX);
+            pointOut = new double[] { pointOut[2], pointOut[0], pointOut[1] };//x y z
             return pointOut;
         }
 
@@ -253,13 +271,12 @@ namespace Resource_Generator
         }
 
         /// <summary>
-        /// Determines the points above and below this point, including wrap-arounds.
+        /// Returns neighboring points in an array ordered as above, below, left, then right.
         /// </summary>
-        /// <param name="abovePoint">The point above this point.</param>
-        /// <param name="belowPoint">The point below this point.</param>
-        public void FindAboveBelowPoints(out SimplePoint abovePoint, out SimplePoint belowPoint)
+        /// <returns>Neighbor points.</returns>
+        public SimplePoint[] FindNeighborPoints()
         {
-            _position.FindAboveBelowPoints(out abovePoint, out belowPoint);
+            return _position.FindNeighborPoints();
         }
 
         /// <summary>
@@ -279,6 +296,8 @@ namespace Resource_Generator
         /// <returns>New position given as a grid of x and y coordinates.</returns>
         public void GridTransform(double[] angle, out double xCoord, out double yCoord)
         {
+            int t1 = X;
+            int t2 = Y;
             double[] doubleOutput = SphericalRotation(_theta, _cosPhi, _sinPhi, angle);
 
             xCoord = doubleOutput[0] / _dTheta;
@@ -344,14 +363,14 @@ namespace Resource_Generator
         /// <returns>New position given as a Simple Point.</returns>
         public SimplePoint Transform(double[] angle)
         {
-            double[] doubleOutput = SphericalRotation(_theta, _cosPhi, _sinPhi, angle);
+            GridTransform(angle, out double xDCoord, out double yDCoord);
 
-            int xCoord = (int)(Math.Round(doubleOutput[0] / _dTheta));
+            int xCoord = (int)(Math.Round(xDCoord));
             if (xCoord == 2 * _halfMapXSize)
             {
                 xCoord = 0;
             }
-            int yCoord = (int)(Math.Round((doubleOutput[1] - _phiShift) / _dPhi));
+            int yCoord = (int)(Math.Round(yDCoord));
             if (yCoord == _mapYSize)
             {
                 yCoord = 0;

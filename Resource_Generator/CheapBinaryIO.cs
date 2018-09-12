@@ -72,11 +72,12 @@ namespace Resource_Generator
         /// <param name="fileName">File to read from.</param>
         /// <param name="xSize">Width of data array.</param>
         /// <param name="ySize">Height of data array.</param>
-        /// <param name="data">Data to read.</param>
-        /// <returns>True if successful, otherwise false.</returns>
-        private static bool ReadByte(string fileName, int xSize, int ySize, out byte[,] data)
+        /// <returns>Data to read.</returns>
+        /// <exception cref="InvalidDataException">File is not formatted correctly.</exception>
+        /// <exception cref="FileNotFoundException">File could not be found.</exception>
+        private static byte[,] ReadByte(string fileName, int xSize, int ySize)
         {
-            data = new byte[xSize, ySize];
+            byte[,] data = new byte[xSize, ySize];
             try
             {
                 using (BinaryReader reader = new BinaryReader(File.Open(fileName, FileMode.Open)))
@@ -89,11 +90,15 @@ namespace Resource_Generator
                         }
                     }
                 }
-                return true;
+                return data;
             }
-            catch (Exception e) when (e is FileNotFoundException || e is NullReferenceException || e is EndOfStreamException)
+            catch (FileNotFoundException e)
             {
-                return false;
+                throw new FileNotFoundException("Byte File", fileName, e);
+            }
+            catch (Exception e) when (e is NullReferenceException || e is EndOfStreamException)
+            {
+                throw new InvalidDataException("Byte File: " + fileName, e);
             }
         }
 
@@ -103,11 +108,12 @@ namespace Resource_Generator
         /// <param name="fileName">File to read from.</param>
         /// <param name="xSize">Width of data array.</param>
         /// <param name="ySize">Height of data array.</param>
-        /// <param name="data">Data to read.</param>
-        /// <returns>True if successful, otherwise false.</returns>
-        private static bool ReadInt(string fileName, int xSize, int ySize, out int[,] data)
+        /// <returns>Data to read.</returns>
+        /// <exception cref="InvalidDataException">File is not formatted correctly.</exception>
+        /// <exception cref="FileNotFoundException">File could not be found.</exception>
+        private static int[,] ReadInt(string fileName, int xSize, int ySize)
         {
-            data = new int[xSize, ySize];
+            int[,] data = new int[xSize, ySize];
             try
             {
                 using (BinaryReader reader = new BinaryReader(File.Open(fileName, FileMode.Open)))
@@ -120,11 +126,15 @@ namespace Resource_Generator
                         }
                     }
                 }
-                return true;
+                return data;
             }
-            catch (Exception e) when (e is FileNotFoundException || e is NullReferenceException || e is EndOfStreamException)
+            catch (FileNotFoundException e)
             {
-                return false;
+                throw new FileNotFoundException("Int File", fileName, e);
+            }
+            catch (Exception e) when (e is NullReferenceException || e is EndOfStreamException)
+            {
+                throw new InvalidDataException("Int File: " + fileName, e);
             }
         }
 
@@ -134,11 +144,12 @@ namespace Resource_Generator
         /// <param name="fileName">File to read from.</param>
         /// <param name="xSize">Width of data array.</param>
         /// <param name="ySize">Height of data array.</param>
-        /// <param name="data">Data to read.</param>
-        /// <returns>True if successful, otherwise false.</returns>
-        private static bool ReadUshort(string fileName, int xSize, int ySize, out ushort[,] data)
+        /// <returns>Data to read.</returns>
+        /// <exception cref="InvalidDataException">File is not formatted correctly.</exception>
+        /// <exception cref="FileNotFoundException">File could not be found.</exception>
+        private static ushort[,] ReadUshort(string fileName, int xSize, int ySize)
         {
-            data = new ushort[xSize, ySize];
+            ushort[,] data = new ushort[xSize, ySize];
             try
             {
                 using (BinaryReader reader = new BinaryReader(File.Open(fileName, FileMode.Open)))
@@ -151,11 +162,15 @@ namespace Resource_Generator
                         }
                     }
                 }
-                return true;
+                return data;
             }
-            catch (Exception e) when (e is FileNotFoundException || e is NullReferenceException || e is EndOfStreamException)
+            catch (FileNotFoundException e)
             {
-                return false;
+                throw new FileNotFoundException("UShort File", fileName, e);
+            }
+            catch (Exception e) when (e is NullReferenceException || e is EndOfStreamException)
+            {
+                throw new InvalidDataException("UShort File: " + fileName, e);
             }
         }
 
@@ -166,15 +181,15 @@ namespace Resource_Generator
         /// <returns>Bit size int. 1 for bool, 8 for byte, 16 for ushort and otherwise 32.</returns>
         private static int Simplify(int rawValue)
         {
-            if (rawValue < 3)
+            if (rawValue < 2)
             {
                 return 1;
             }
-            if (rawValue < 257)
+            if (rawValue < 256)
             {
                 return 8;
             }
-            if (rawValue < 65537)
+            if (rawValue < 65536)
             {
                 return 16;
             }
@@ -291,35 +306,30 @@ namespace Resource_Generator
         /// </summary>
         /// <param name="filePath">File to read from.</param>
         /// <param name="maxValue">Max value of the data.</param>
-        /// <param name="data">Data to retrieve.</param>
-        /// <returns>True if successful, otherwise false.</returns>
-        public static bool Read(string filePath, int maxValue, int xSize, int ySize, out int[,] data)
+        /// <returns>Data to retrieve as an array of integers.</returns>
+        /// <exception cref="InvalidDataException">File is not formatted correctly.</exception>
+        /// <exception cref="FileNotFoundException">File could not be found.</exception>
+        public static int[,] Read(string filePath, int maxValue, int xSize, int ySize)
         {
-            bool output = false;
-            data = null;
             int bitSize = Simplify(maxValue);
             switch (bitSize)
             {
                 case 1:
-                    output = ReadBinary(filePath, xSize, ySize, out bool[,] rawBoolData);
-                    data = UncompressBinary(rawBoolData);
-                    break;
+                    bool[,] rawBoolData = ReadBinary(filePath, xSize, ySize);
+                    return UncompressBinary(rawBoolData);
 
                 case 8:
-                    output = ReadByte(filePath, xSize, ySize, out byte[,] rawByteData);
-                    data = UncompressByte(rawByteData);
-                    break;
+                    byte[,] rawByteData = ReadByte(filePath, xSize, ySize);
+                    return UncompressByte(rawByteData);
 
                 case 16:
-                    output = ReadUshort(filePath, xSize, ySize, out ushort[,] rawUshortData);
-                    data = UncompressUshort(rawUshortData);
-                    break;
+                    ushort[,] rawUshortData = ReadUshort(filePath, xSize, ySize);
+                    return UncompressUshort(rawUshortData);
 
                 case 32:
-                    output = ReadInt(filePath, xSize, ySize, out data);
-                    break;
+                    return ReadInt(filePath, xSize, ySize);
             }
-            return output;
+            return null;
         }
 
         /// <summary>
@@ -328,11 +338,12 @@ namespace Resource_Generator
         /// <param name="fileName">File to read from.</param>
         /// <param name="xSize">Width of data array.</param>
         /// <param name="ySize">Height of data array.</param>
-        /// <param name="data">Data to read.</param>
-        /// <returns>True if successful, otherwise false.</returns>
-        public static bool ReadBinary(string fileName, int xSize, int ySize, out bool[,] data)
+        /// <returns>Data to read.</returns>
+        /// <exception cref="InvalidDataException">File is not formatted correctly.</exception>
+        /// <exception cref="FileNotFoundException">File could not be found.</exception>
+        public static bool[,] ReadBinary(string fileName, int xSize, int ySize)
         {
-            data = new bool[xSize, ySize];
+            bool[,] data = new bool[xSize, ySize];
             try
             {
                 using (BinaryReader reader = new BinaryReader(File.Open(fileName, FileMode.Open)))
@@ -345,11 +356,15 @@ namespace Resource_Generator
                         }
                     }
                 }
-                return true;
+                return data;
             }
-            catch (Exception e) when (e is FileNotFoundException || e is NullReferenceException || e is EndOfStreamException)
+            catch (FileNotFoundException e)
             {
-                return false;
+                throw new FileNotFoundException("Binary File", fileName, e);
+            }
+            catch (Exception e) when (e is NullReferenceException || e is EndOfStreamException)
+            {
+                throw new InvalidDataException("Binary File: " + fileName, e);
             }
         }
 

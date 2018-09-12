@@ -22,18 +22,22 @@ namespace Resource_Generator
         /// </summary>
         /// <param name="iPoint">Point to find height for.</param>
         /// <returns>Height of point.</returns>
-        private static double GetHeight(PlatePoint iPoint, Random randomNumber)
+        private static double GetHeight(PlatePoint iPoint, double randomNumber)
         {
+            double height = 0;
             if (!iPoint.IsContinental)
             {
-                return 0;
+                return height;
             }
-            //Some math depending on concentration and density of initial point
-            double height = 1000 + 1000 * randomNumber.NextDouble();
-            //Some math depending on collision histoyr
-            height += 10 * iPoint.History.ContinentalBuildup * iPoint.History.ContinentalRecency / rules.currentTime;
-            height += 10 * iPoint.History.OceanicBuildup * iPoint.History.OceanicRecency / rules.currentTime;
-            return height;
+            else
+            {
+                //Some math depending on concentration and density of initial point
+                height += 1000 + 100 * randomNumber;
+                //Some math depending on collision history
+                height += 10 * iPoint.History.ContinentalBuildup * (iPoint.History.ContinentalRecency + 1) / rules.currentTime;
+                height += 10 * iPoint.History.OceanicBuildup * (iPoint.History.OceanicRecency + 1) / rules.currentTime;
+                return height;
+            }
         }
 
         /// <summary>
@@ -51,7 +55,7 @@ namespace Resource_Generator
             {
                 for (int y = 0; y < pointMap.GetLength(1); y++)
                 {
-                    heightMap[x, y] = GetHeight(pointMap[x, y], randomNumber);
+                    heightMap[x, y] = GetHeight(pointMap[x, y], randomNumber.NextDouble());
                 }
             }
             return heightMap;

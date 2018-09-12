@@ -91,25 +91,14 @@ namespace Resource_Generator
                 throw new ArgumentException("Object is not an Overlap Point.");
             }
         }
-
+        
         /// <summary>
-        /// Determines the points above and below this point, including wrap-arounds.
+        /// Returns neighboring points in an array ordered as above, below, left, then right.
         /// </summary>
-        /// <param name="abovePoint">The point above this point.</param>
-        /// <param name="belowPoint">The point below this point.</param>
-        public void FindAboveBelowPoints(out SimplePoint abovePoint, out SimplePoint belowPoint)
+        /// <returns>Neighbor points.</returns>
+        public SimplePoint[] FindNeighborPoints()
         {
-            _position.FindAboveBelowPoints(out abovePoint, out belowPoint);
-        }
-
-        /// <summary>
-        /// Determines the points left and right of this point, including wrap-arounds.
-        /// </summary>
-        /// <param name="leftPoint">The point to the left of this point.</param>
-        /// <param name="rightPoint">The point to the right of this point.</param>
-        public void FindLeftRightPoints(out SimplePoint leftPoint, out SimplePoint rightPoint)
-        {
-            _position.FindLeftRightPoints(out leftPoint, out rightPoint);
+            return _position.FindNeighborPoints();
         }
 
         /// <summary>

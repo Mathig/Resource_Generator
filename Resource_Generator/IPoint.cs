@@ -16,17 +16,9 @@
         int Y { get; }
 
         /// <summary>
-        /// Determines the points above and below this point, including wrap-arounds.
+        /// Returns neighboring points in an array ordered as above, below, left, then right.
         /// </summary>
-        /// <param name="abovePoint">The point above this point.</param>
-        /// <param name="belowPoint">The point below this point.</param>
-        void FindAboveBelowPoints(out SimplePoint abovePoint, out SimplePoint belowPoint);
-
-        /// <summary>
-        /// Determines the points left and right of this point, including wrap-arounds.
-        /// </summary>
-        /// <param name="leftPoint">The point to the left of this point.</param>
-        /// <param name="rightPoint">The point to the right of this point.</param>
-        void FindLeftRightPoints(out SimplePoint leftPoint, out SimplePoint rightPoint);
+        /// <returns>Neighbor points.</returns>
+        SimplePoint[] FindNeighborPoints();
     }
 }

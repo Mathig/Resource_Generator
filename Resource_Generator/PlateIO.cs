@@ -10,23 +10,19 @@ namespace Resource_Generator
     internal static class PlateIO
     {
         /// <summary>
-        /// Location of directory.
-        /// </summary>
-        public static string directory;
-
-        /// <summary>
         /// Opens plate data.
         /// </summary>
-        /// <param name="fileLocation">Location of plate data.</param>
-        /// <param name="plateData">Plate data.</param>
-        /// <returns>True if successful and data is consistent, false otherwise.</returns>
-        public static bool OpenPlateData(string fileLocation, out PlateData plateData)
+        /// <param name="fileName">Location of plate data, not including extension.</param>
+        /// <returns>Plate data.</returns>
+        /// <exception cref="InvalidDataException">Some data values are missing, or an xml or uri exception were called.</exception>
+        /// <exception cref="FileNotFoundException">File not found.</exception>
+        public static PlateData OpenPlateData(string fileName)
         {
-            plateData = new PlateData();
+            PlateData plateData = new PlateData();
             int plateCount = 0;
             try
             {
-                XmlReader reader = XmlReader.Create(directory + "\\" + fileLocation + ".xml");
+                XmlReader reader = XmlReader.Create(fileName + ".xml");
                 while (reader.Read())
                 {
                     if (reader.NodeType == XmlNodeType.Element && reader.Name == "Handler")
@@ -49,8 +45,7 @@ namespace Resource_Generator
                             int index = int.Parse(reader.GetAttribute("Plate_Index"));
                             if (index >= plateCount)
                             {
-                                Console.WriteLine("Too many plates detected.");
-                                return false;
+                                throw new InvalidDataException("Plate Data file has too many plates.");
                             }
                             plateData.Speed[index] = double.Parse(reader.GetAttribute("Speed"));
                             plateData.Direction[index][0] = double.Parse(reader.GetAttribute("Direction_One"));
@@ -58,28 +53,24 @@ namespace Resource_Generator
                         }
                     }
                 }
+                return plateData;
             }
-            catch (FileNotFoundException)
+            catch (FileNotFoundException e)
             {
-                Console.WriteLine("Plate Data file not found.");
-                return false;
+                throw new FileNotFoundException("Plate Data file missing. Can't find: " + fileName, e);
             }
-            catch (UriFormatException)
+            catch (UriFormatException e)
             {
-                Console.WriteLine("Plate Data file yielded UriFormatException.");
-                return false;
+                throw new InvalidDataException("Plate Data file yielded UriFormatException: " + e.Message, e);
             }
             catch (XmlException e)
             {
-                Console.WriteLine("XML Exception: " + e.Message);
-                return false;
+                throw new InvalidDataException("Plate Data file yielded XML Exception: " + e.Message, e);
             }
-            catch (NullReferenceException)
+            catch (NullReferenceException e)
             {
-                Console.WriteLine("Plate Data is formatted incorrectly.");
-                return false;
+                throw new InvalidDataException("Plate Data file is missing values.", e);
             }
-            return true;
         }
     }
 }

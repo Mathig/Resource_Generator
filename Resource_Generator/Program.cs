@@ -5,7 +5,8 @@ namespace Resource_Generator
     internal class Program
     {
         /// <summary>
-        /// Entry program loop. Redirects control to CommandController, and allows user to close program at will on crash.
+        /// Entry program loop. Redirects control to CommandController, and allows user to close
+        /// program at will on crash.
         /// </summary>
         private static void Main(string[] args)
         {

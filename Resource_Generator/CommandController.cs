@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 
 namespace Resource_Generator
 {
@@ -18,7 +19,7 @@ namespace Resource_Generator
         private static string _directory;
 
         /// <summary>
-        /// Processes commands.
+        /// Processes commands and handles errors.
         /// </summary>
         private static void CommandProcessing()
         {
@@ -26,47 +27,18 @@ namespace Resource_Generator
             while (!closeProgram)
             {
                 string newCommand = Console.ReadLine();
-                switch (newCommand)
+                try
                 {
-                    case "Erode Plates":
-                        closeProgram = !GenerateErosion();
-                        break;
-
-                    case "Copy Plates":
-                        closeProgram = !CopyPlates();
-                        break;
-
-                    case "Generate Plates":
-                        closeProgram = !GeneratePlates();
-                        break;
-
-                    case "Generate Rainfall Map":
-                        closeProgram = !GenerateRainfall();
-                        break;
-
-                    case "Generate Altitude Map":
-                        closeProgram = !GenerateAltitudes();
-                        break;
-
-                    case "Move Plates":
-                        closeProgram = !MovePlates();
-                        break;
-
-                    case "Move Directory":
-                        closeProgram = MoveDirectory();
-                        break;
-
-                    case "Help":
-                        Help();
-                        break;
-
-                    case "Close":
-                        closeProgram = true;
-                        break;
-
-                    default:
-                        Console.WriteLine("Invalid Command. Use Help to list available commands.");
-                        break;
+                    closeProgram = !RunCommand(newCommand);
+                }
+                catch (FormatException e)
+                {
+                    Console.WriteLine(e.Message);
+                    Console.WriteLine(validFileNameCriteria);
+                }
+                catch (SystemException e) when (e is FileNotFoundException || e is InvalidDataException)
+                {
+                    Console.WriteLine(e.Message);
                 }
             }
         }
@@ -74,132 +46,45 @@ namespace Resource_Generator
         /// <summary>
         /// Copies an image plate file into a data file.
         /// </summary>
-        /// <returns>True if successful, false otherwise.</returns>
-        private static bool CopyPlates()
+        private static void CopyPlates()
         {
-            Console.WriteLine("Input Plate image file name.");
-            FileName image = new FileName(Console.ReadLine());
-            if (!image.IsValid())
-            {
-                Console.WriteLine("File name is invalid. " + validFileNameCriteria);
-                return false;
-            }
-            Console.WriteLine("Input Plate data file name.");
-            FileName dataFile = new FileName(Console.ReadLine());
-            if (!dataFile.IsValid())
-            {
-                Console.WriteLine("File name is invalid. " + validFileNameCriteria);
-                return false;
-            }
-            if (!PointIO.OpenPointImage(image.name, out int[,] data))
-            {
-                Console.WriteLine("Image file is corrupted.");
-                return false;
-            }
-            PointIO.SavePointPlateData(dataFile.name, data);
-            return true;
+            FileName image = InputFileName("Plate image");
+            FileName dataFile = InputFileName("Plate data");
+            int[,] data = PointIO.OpenPointImage(image.Name);
+            PointIO.SavePointPlateData(dataFile.Name, data);
         }
 
         /// <summary>
         /// Generates altitude map for points.
         /// </summary>
-        /// <returns>True if succesful, otherwise false.</returns>
-        private static bool GenerateAltitudes()
+        private static void GenerateAltitudes()
         {
-            Console.WriteLine("Input Generate Height Rules File Name.");
-            FileName rulesLocation = new FileName(Console.ReadLine());
-            if (!rulesLocation.IsValid())
-            {
-                Console.WriteLine("File name is invalid. " + validFileNameCriteria);
-                return false;
-            }
-            Console.WriteLine("Input Point Data File Name.");
-            FileName inDataLocation = new FileName(Console.ReadLine());
-            if (!inDataLocation.IsValid())
-            {
-                Console.WriteLine("File name is invalid. " + validFileNameCriteria);
-                return false;
-            }
-            Console.WriteLine("Input Height Data File Name.");
-            FileName outDataLocation = new FileName(Console.ReadLine());
-            if (!outDataLocation.IsValid())
-            {
-                Console.WriteLine("File name is invalid. " + validFileNameCriteria);
-                return false;
-            }
-            if (!RulesInput.LoadAltitudeRules(rulesLocation.name, out AltitudeMapRules rules))
-            {
-                Console.WriteLine("Rules are invalid. See default rules.");
-                return false;
-            }
-            if (!PointIO.OpenPointData(inDataLocation.name, rules, out PlatePoint[,] inPointData))
-            {
-                Console.WriteLine("Point Data is corrupted.");
-                return false;
-            }
+            FileName rulesLocation = InputFileName("Generate Height Rules");
+            FileName inDataLocation = InputFileName("Point Data");
+            FileName outDataLocation = InputFileName("Height Data");
+            AltitudeMapRules rules = RulesInput.LoadAltitudeRules(rulesLocation.Name);
+            PlatePoint[,] inPointData = PointIO.OpenPointData(inDataLocation.Name, rules);
             double[,] heightMap = GenerateAltitudeMap.Run(inPointData, rules);
-            PointIO.SaveHeightImage(outDataLocation.name, heightMap);
-            PointIO.SaveMapData(_directory + "\\" + outDataLocation.name + ".bin", heightMap);
-            return true;
+            PointIO.SaveHeightImage(outDataLocation.Name, heightMap);
+            PointIO.SaveMapData(outDataLocation.Name + ".bin", heightMap);
         }
 
         /// <summary>
         /// Erodes plates.
         /// </summary>
-        /// <returns>True if succesful, false otherwise.</returns>
-        private static bool GenerateErosion()
+        private static void GenerateErosion()
         {
-            Console.WriteLine("Input Erosion Rules File Name.");
-            FileName rulesLocation = new FileName(Console.ReadLine());
-            if (!rulesLocation.IsValid())
-            {
-                Console.WriteLine("File name is invalid. " + validFileNameCriteria);
-                return false;
-            }
-            Console.WriteLine("Input Height Data File Name.");
-            FileName inHeightLocation = new FileName(Console.ReadLine());
-            if (!inHeightLocation.IsValid())
-            {
-                Console.WriteLine("File name is invalid. " + validFileNameCriteria);
-                return false;
-            }
-            Console.WriteLine("Input Rainfall Data File Name.");
-            FileName inRainLocation = new FileName(Console.ReadLine());
-            if (!inRainLocation.IsValid())
-            {
-                Console.WriteLine("File name is invalid. " + validFileNameCriteria);
-                return false;
-            }
-            FileName outErosionLocation = new FileName(Console.ReadLine());
-            if (!outErosionLocation.IsValid())
-            {
-                Console.WriteLine("File name is invalid. " + validFileNameCriteria);
-                return false;
-            }
-            FileName outIsWaterLocation = new FileName(Console.ReadLine());
-            if (!outIsWaterLocation.IsValid())
-            {
-                Console.WriteLine("File name is invalid. " + validFileNameCriteria);
-                return false;
-            }
-            if (!RulesInput.LoadErosionRules(rulesLocation.name, out ErosionMapRules rules))
-            {
-                Console.WriteLine("Rules are invalid. See default rules.");
-                return false;
-            }
-            if (!PointIO.OpenHeightData(_directory + "\\" + inHeightLocation.name + ".bin", 2 * rules.xHalfSize, rules.ySize, out double[,] heightMap))
-            {
-                Console.WriteLine("Height Data is corrupted.");
-                return false;
-            }
+            FileName rulesLocation = InputFileName("Erosion Rule");
+            FileName inHeightLocation = InputFileName("Height Data");
+            FileName inRainLocation = InputFileName("Rainfall Data");
+            FileName outErosionLocation = InputFileName("Erosion Data");
+            FileName outIsWaterLocation = InputFileName("Is Water Data");
+            ErosionMapRules rules = RulesInput.LoadErosionRules(rulesLocation.Name);
+            double[,] heightMap = PointIO.OpenDoubleData(inHeightLocation.Name + ".bin", 2 * rules.xHalfSize, rules.ySize);
             double[,] rainfallMap = new double[2 * rules.xHalfSize, rules.ySize];
             for (int i = 0; i < rules.numberSeasons; i++)
             {
-                if (!PointIO.OpenHeightData(_directory + "\\" + inHeightLocation.name + ".bin", 2 * rules.xHalfSize, rules.ySize, out double[,] rainfallMapTemp))
-                {
-                    Console.WriteLine("Rainfall Data is corrupted.");
-                    return false;
-                }
+                double[,] rainfallMapTemp = PointIO.OpenDoubleData(inHeightLocation.Name + ".bin", 2 * rules.xHalfSize, rules.ySize);
                 for (int x = 0; x < 2 * rules.xHalfSize; x++)
                 {
                     for (int y = 0; y < rules.ySize; y++)
@@ -209,87 +94,36 @@ namespace Resource_Generator
                 }
             }
             GenerateErosionMap.Run(heightMap, rainfallMap, rules, out bool[,] isWater, out double[,] erosionMap);
-            PointIO.SaveHeightImage(outErosionLocation.name, erosionMap);
-            PointIO.SaveMapData(_directory + "\\" + outErosionLocation.name + ".bin", erosionMap);
-            CheapBinaryIO.WriteBinary(_directory + "\\" + outIsWaterLocation.name + ".bin", isWater);
-            return true;
+            PointIO.SaveHeightImage(outErosionLocation.Name, erosionMap);
+            PointIO.SaveMapData(outErosionLocation.Name + ".bin", erosionMap);
+            CheapBinaryIO.WriteBinary(outIsWaterLocation.Name + ".bin", isWater);
         }
 
         /// <summary>
         /// Generates tectonic plates.
         /// </summary>
-        /// <returns>Returns true if successful, false if crashed.</returns>
-        private static bool GeneratePlates()
+        private static void GeneratePlates()
         {
-            Console.WriteLine("Input Generate Rules File Name.");
-            FileName rulesLocation = new FileName(Console.ReadLine());
-            if (!rulesLocation.IsValid())
-            {
-                Console.WriteLine("File name is invalid. " + validFileNameCriteria);
-                return false;
-            }
-            Console.WriteLine("Input Data File Name.");
-            FileName outDataLocation = new FileName(Console.ReadLine());
-            if (!outDataLocation.IsValid())
-            {
-                Console.WriteLine("File name is invalid. " + validFileNameCriteria);
-                return false;
-            }
-            Console.WriteLine("Input Image File Name.");
-            FileName outImageLocation = new FileName(Console.ReadLine());
-            if (!outImageLocation.IsValid())
-            {
-                Console.WriteLine("File name is invalid. " + validFileNameCriteria);
-                return false;
-            }
-            if (!RulesInput.LoadGenerateRules(rulesLocation.name, out GenerateRules rules))
-            {
-                Console.WriteLine("Rules are invalid. See default rules.");
-                return false;
-            }
+            FileName rulesLocation = InputFileName("Generate Rules");
+            FileName outDataLocation = InputFileName("Point Data");
+            FileName outImageLocation = InputFileName("Point Image");
+            GenerateRules rules = RulesInput.LoadGenerateRules(rulesLocation.Name);
             PlatePoint[,] pointData = GeneratePlateData.Run(rules);
-            PointIO.SavePointData(outDataLocation.name, rules, pointData);
-            PointIO.SavePointImage(outImageLocation.name, rules, pointData);
-            return true;
+            PointIO.SavePointData(outDataLocation.Name, rules, pointData);
+            PointIO.SavePointImage(outImageLocation.Name, rules, pointData);
+            GC.Collect();
         }
 
         /// <summary>
         /// Generates rainfall map.
         /// </summary>
-        /// <returns>True if successful, false if crashed.</returns>
-        private static bool GenerateRainfall()
+        private static void GenerateRainfall()
         {
-            Console.WriteLine("Input Rainfall Rules File Name.");
-            FileName rulesLocation = new FileName(Console.ReadLine());
-            if (!rulesLocation.IsValid())
-            {
-                Console.WriteLine("File name is invalid. " + validFileNameCriteria);
-                return false;
-            }
-            Console.WriteLine("Input Height Map Data File Name.");
-            FileName inDataLocation = new FileName(Console.ReadLine());
-            if (!inDataLocation.IsValid())
-            {
-                Console.WriteLine("File name is invalid. " + validFileNameCriteria);
-                return false;
-            }
-            Console.WriteLine("Input Rainfall Data File Name.");
-            FileName outDataLocation = new FileName(Console.ReadLine());
-            if (!outDataLocation.IsValid())
-            {
-                Console.WriteLine("File name is invalid. " + validFileNameCriteria);
-                return false;
-            }
-            if (!RulesInput.LoadRainfallRules(rulesLocation.name, out RainfallMapRules rules))
-            {
-                Console.WriteLine("Rules are invalid. See default rules.");
-                return false;
-            }
-            if (!PointIO.OpenHeightData(_directory + "\\" + inDataLocation.name, 2 * rules.xHalfSize, rules.ySize, out double[,] heightMap))
-            {
-                Console.WriteLine("Point Data is corrupted.");
-                return false;
-            }
+            FileName rulesLocation = InputFileName("Rainfall Rules");
+            FileName inDataLocation = InputFileName("Height Map Data");
+            FileName outDataLocation = InputFileName("Rainfall Data");
+            RainfallMapRules rules = RulesInput.LoadRainfallRules(rulesLocation.Name);
+            double[,] heightMap = PointIO.OpenDoubleData(inDataLocation.Name + ".bin", 2 * rules.xHalfSize, rules.ySize);
             double[,,] rainfallMap = GenerateRainfallMap.Run(heightMap, rules);
             for (int i = 0; i < rainfallMap.GetLength(2); i++)
             {
@@ -301,10 +135,9 @@ namespace Resource_Generator
                         rainfallMapTemp[x, y] = rainfallMap[x, y, i];
                     }
                 }
-                PointIO.SaveHeightImage(outDataLocation.name + i.ToString(), rainfallMapTemp);
-                PointIO.SaveMapData(_directory + "\\" + outDataLocation.name + i.ToString() + ".bin", rainfallMapTemp);
+                PointIO.SaveHeightImage(outDataLocation.Name + i.ToString(), rainfallMapTemp);
+                PointIO.SaveMapData(outDataLocation.Name + i.ToString() + ".bin", rainfallMapTemp);
             }
-            return true;
         }
 
         /// <summary>
@@ -318,15 +151,31 @@ namespace Resource_Generator
             Console.WriteLine("Copy Plates: Converts an image file of data to a binary data file.");
             Console.WriteLine("Move Directory: Moves the directory.");
             Console.WriteLine("Move Plates: Moves the Plates.");
+            Console.WriteLine("Generate Rainfall Map: Generates Rainfall Map.");
             Console.WriteLine("Generate Plates: Generates the Plates");
             Console.WriteLine("Generate Altitude Map: Generates altitude map.");
             Console.WriteLine("Close: Closes Program.");
         }
 
         /// <summary>
+        /// Asks the user to input a file name.
+        /// </summary>
+        /// <param name="nameDescriptor">Descriptor for user to reference the file name.</param>
+        /// <returns>File name.</returns>
+        /// <exception cref="FormatException">Yields exception if the file name is invalid.</exception>
+        private static FileName InputFileName(string nameDescriptor)
+        {
+            Console.WriteLine("Input " + nameDescriptor + " file name.");
+            FileName fileName = new FileName(Console.ReadLine());
+            fileName.CheckValidity();
+            return fileName;
+        }
+
+        /// <summary>
         /// Moves the directory.
         /// </summary>
-        private static bool MoveDirectory()
+        /// <exception cref="InvalidDataException">Directory was invalid.</exception>
+        private static void MoveDirectory()
         {
             Console.WriteLine("Enter the new directory.");
             string tempDirectory = Console.ReadLine();
@@ -336,75 +185,81 @@ namespace Resource_Generator
                 DirectoryManager.GenerateDefaultFiles(tempDirectory);
                 DirectoryManager.Save(coreDirectory, tempDirectory);
                 _directory = tempDirectory;
+                FileName.directory = _directory;
                 Console.WriteLine("Directory successfully moved to: " + _directory);
-                return true;
             }
             else
             {
-                Console.WriteLine("Directory is invalid.");
-                return false;
+                throw new InvalidDataException("Directory is invalid");
             }
         }
 
         /// <summary>
         /// Moves tectonic plates.
         /// </summary>
-        /// <returns>Returns true if successful, false if crashed.</returns>
-        private static bool MovePlates()
+        private static void MovePlates()
         {
-            Console.WriteLine("Input Move Rules File Name.");
-            FileName rulesLocation = new FileName(Console.ReadLine());
-            if (!rulesLocation.IsValid())
-            {
-                Console.WriteLine("File name is invalid. " + validFileNameCriteria);
-                return false;
-            }
-            Console.WriteLine("Input Plate Data File Name.");
-            FileName plateDataLocation = new FileName(Console.ReadLine());
-            if (!plateDataLocation.IsValid())
-            {
-                Console.WriteLine("File name is invalid. " + validFileNameCriteria);
-                return false;
-            }
-            Console.WriteLine("Input Source Point Data File Name.");
-            FileName inPointDataLocation = new FileName(Console.ReadLine());
-            if (!inPointDataLocation.IsValid())
-            {
-                Console.WriteLine("File name is invalid. " + validFileNameCriteria);
-                return false;
-            }
-            Console.WriteLine("Input Destination Point Data File Name.");
-            FileName outPointDataLocation = new FileName(Console.ReadLine());
-            if (!outPointDataLocation.IsValid())
-            {
-                Console.WriteLine("File name is invalid. " + validFileNameCriteria);
-                return false;
-            }
-            Console.WriteLine("Input Image File Name.");
-            FileName plateImageLocation = new FileName(Console.ReadLine());
-            if (!plateImageLocation.IsValid())
-            {
-                Console.WriteLine("File name is invalid. " + validFileNameCriteria);
-                return false;
-            }
-            if (!RulesInput.LoadMoveRules(rulesLocation.name, out MoveRules rules))
-            {
-                Console.WriteLine("Rules are invalid. See default rules.");
-                return false;
-            }
-            if (!PlateIO.OpenPlateData(plateDataLocation.name, out PlateData plateData))
-            {
-                Console.WriteLine("Plate Data is corrupted.");
-                return false;
-            }
-            if (!PointIO.OpenPointData(inPointDataLocation.name, rules, out PlatePoint[,] inPointData))
-            {
-                Console.WriteLine("Point Data is corrupted.");
-                return false;
-            }
+            FileName rulesLocation = InputFileName("Move Rules");
+            FileName plateDataLocation = InputFileName("Plate Data");
+            FileName inPointDataLocation = InputFileName("Source Point Data");
+            FileName outPointDataLocation = InputFileName("Destination Point Data");
+            FileName plateImageLocation = InputFileName("Image");
+            MoveRules rules = RulesInput.LoadMoveRules(rulesLocation.Name);
+            PlateData plateData = PlateIO.OpenPlateData(plateDataLocation.Name);
+            PlatePoint[,] inPointData = PointIO.OpenPointData(inPointDataLocation.Name, rules);
             PlatePoint[,] outPointData = MovePlatesData.Run(rules, plateData, inPointData);
-            PointIO.SavePointData(outPointDataLocation.name, rules, outPointData);
-            PointIO.SavePointImage(plateImageLocation.name, rules, outPointData);
+            PointIO.SavePointData(outPointDataLocation.Name, rules, outPointData);
+            PointIO.SavePointImage(plateImageLocation.Name, rules, outPointData);
+        }
+
+        /// <summary>
+        /// Runs a command based on the string.
+        /// </summary>
+        /// <param name="command">String of command to run.</param>
+        /// <returns>True if successful, otherwise false.</returns>
+        private static bool RunCommand(string command)
+        {
+            switch (command)
+            {
+                case "Erode Plates":
+                    GenerateErosion();
+                    break;
+
+                case "Copy Plates":
+                    CopyPlates();
+                    break;
+
+                case "Generate Plates":
+                    GeneratePlates();
+                    break;
+
+                case "Generate Rainfall Map":
+                    GenerateRainfall();
+                    break;
+
+                case "Generate Altitude Map":
+                    GenerateAltitudes();
+                    break;
+
+                case "Move Plates":
+                    MovePlates();
+                    break;
+
+                case "Move Directory":
+                    MoveDirectory();
+                    break;
+
+                case "Help":
+                    Help();
+                    break;
+
+                case "Close":
+                    return false;
+
+                default:
+                    Console.WriteLine("Invalid Command. Use Help to list available commands.");
+                    break;
+            }
             return true;
         }
 
@@ -416,9 +271,7 @@ namespace Resource_Generator
             if (DirectoryManager.Setup(out string directory))
             {
                 _directory = directory;
-                RulesInput.directory = _directory;
-                PlateIO.directory = _directory;
-                PointIO.directory = _directory;
+                FileName.directory = directory;
                 CommandProcessing();
             }
         }

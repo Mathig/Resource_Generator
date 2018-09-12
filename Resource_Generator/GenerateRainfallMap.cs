@@ -27,14 +27,13 @@ namespace Resource_Generator
         private static int[] BaseITC(double[,] heightMap, double pitchEffect)
         {
             int[] initialITC = new int[2 * rules.xHalfSize];
-            int[] finalITC = new int[2 * rules.xHalfSize];
             double threshold = pitchEffect * 0.5 * rules.ySize;
             int midPoint = (int)Math.Round(0.5 * rules.ySize);
             for (int x = 0; x < 2 * rules.xHalfSize; x++)
             {
+                double counter = 0;
                 if (pitchEffect > 0)
                 {
-                    double counter = 0;
                     for (int y = midPoint; y < rules.ySize; y++)
                     {
                         if (heightMap[x, y] == 0)
@@ -54,8 +53,7 @@ namespace Resource_Generator
                 }
                 else
                 {
-                    double counter = 0;
-                    for (int y = 0; y < midPoint; y++)
+                    for (int y = midPoint; y > 0; y--)
                     {
                         if (heightMap[x, y] == 0)
                         {
@@ -73,7 +71,7 @@ namespace Resource_Generator
                     }
                 }
             }
-            return finalITC;
+            return initialITC;
         }
 
         /// <summary>
@@ -143,12 +141,11 @@ namespace Resource_Generator
             {
                 for (int y = 0; y < rules.ySize; y++)
                 {
-                    point[x, y].FindLeftRightPoints(out SimplePoint leftPoint, out SimplePoint rightPoint);
-                    point[x, y].FindAboveBelowPoints(out SimplePoint abovePoint, out SimplePoint belowPoint);
-                    double leftHeight = pressureMap[leftPoint.X, leftPoint.Y];
-                    double rightHeight = pressureMap[rightPoint.X, rightPoint.Y];
-                    double aboveHeight = pressureMap[abovePoint.X, abovePoint.Y];
-                    double belowHeight = pressureMap[belowPoint.X, belowPoint.Y];
+                    SimplePoint[] nearPoints = point[x, y].FindNeighborPoints();
+                    double leftHeight = pressureMap[nearPoints[2].X, nearPoints[2].Y];
+                    double rightHeight = pressureMap[nearPoints[3].X, nearPoints[3].Y];
+                    double aboveHeight = pressureMap[nearPoints[0].X, nearPoints[0].Y];
+                    double belowHeight = pressureMap[nearPoints[1].X, nearPoints[1].Y];
                     double xDerivative = rightHeight - leftHeight;
                     double yDerivative = aboveHeight - belowHeight;
                     double rDerivative = Math.Sqrt(xDerivative * xDerivative + yDerivative * yDerivative);
@@ -209,22 +206,21 @@ namespace Resource_Generator
                     }
                 }
             }
-            for (int i = 0; i < rules.xHalfSize; i++)
+            for (int i = 0; i < 10; i++)
             {
-                double rainfallReduction = (double)(i + 1) * (i + 1) / (rules.xHalfSize * rules.xHalfSize);
+                //double rainfallReduction = (double)(i + 1) * (i + 1) / (100);
+                double rainfallReduction = 1;
                 for (int x = 0; x < 2 * rules.xHalfSize; x++)
                 {
                     for (int y = 0; y < rules.ySize; y++)
                     {
-                        point[x, y].FindLeftRightPoints(out SimplePoint leftPoint, out SimplePoint rightPoint);
-                        point[x, y].FindAboveBelowPoints(out SimplePoint abovePoint, out SimplePoint belowPoint);
-
-                        tempRainfallTwo[leftPoint.X, leftPoint.Y] = windMap[x, y, 0] * tempRainfallOne[x, y];
-                        tempRainfallTwo[rightPoint.X, rightPoint.Y] = windMap[x, y, 1] * tempRainfallOne[x, y];
-                        tempRainfallTwo[abovePoint.X, abovePoint.Y] = windMap[x, y, 2] * tempRainfallOne[x, y];
-                        tempRainfallTwo[belowPoint.X, belowPoint.Y] = windMap[x, y, 3] * tempRainfallOne[x, y];
-                        tempRainfallTwo[x, y] = tempRainfallOne[x, y] * (windMap[x, y, 0] + windMap[x, y, 1] + windMap[x, y, 2] + windMap[x, y, 3]);
-                        output[x, y] += rainfallReduction * tempRainfallTwo[x, y] * heightMap[x, y];
+                        SimplePoint[] nearPoints = point[x, y].FindNeighborPoints();
+                        for (int j = 0; j < 4; j++)
+                        {
+                            tempRainfallTwo[nearPoints[j].X, nearPoints[j].Y] = windMap[x, y, 0] * tempRainfallOne[x, y];
+                        }
+                        tempRainfallTwo[x, y] = tempRainfallOne[x, y] * (1 - windMap[x, y, 0] - windMap[x, y, 1] - windMap[x, y, 2] - windMap[x, y, 3]);
+                        output[x, y] += rainfallReduction * tempRainfallOne[x, y] * heightMap[x, y];
                         tempRainfallTwo[x, y] = (1 - rainfallReduction) * tempRainfallTwo[x, y] * heightMap[x, y] / 3000;
                     }
                 }
@@ -241,7 +237,6 @@ namespace Resource_Generator
         private static double[,] SmoothPressure(double[,] rawPressure)
         {
             double[,] output = new double[2 * rules.xHalfSize, rules.ySize];
-            double[,] tempOutput = new double[2 * rules.xHalfSize, rules.ySize];
             double[,] tempInput = rawPressure;
             for (int i = 0; i < 10; i++)
             {
@@ -249,16 +244,15 @@ namespace Resource_Generator
                 {
                     for (int y = 0; y < rules.ySize; y++)
                     {
-                        tempOutput[x, y] = 0.6 * tempInput[x, y];
-                        point[x, y].FindLeftRightPoints(out SimplePoint leftPoint, out SimplePoint rightPoint);
-                        point[x, y].FindAboveBelowPoints(out SimplePoint abovePoint, out SimplePoint belowPoint);
-                        tempOutput[x, y] = 0.1 * tempInput[leftPoint.X, leftPoint.Y];
-                        tempOutput[x, y] = 0.1 * tempInput[rightPoint.X, rightPoint.Y];
-                        tempOutput[x, y] = 0.1 * tempInput[abovePoint.X, abovePoint.Y];
-                        tempOutput[x, y] = 0.1 * tempInput[belowPoint.X, belowPoint.Y];
+                        output[x, y] = 0.6 * tempInput[x, y];
+                        SimplePoint[] nearPoints = point[x, y].FindNeighborPoints();
+                        for (int j = 0; j < 4; j++)
+                        {
+                            output[x, y] = 0.1 * tempInput[nearPoints[j].X, nearPoints[j].Y];
+                        }
                     }
                 }
-                tempInput = tempOutput;
+                tempInput = output;
             }
             return output;
         }
