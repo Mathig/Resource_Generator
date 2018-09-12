@@ -56,7 +56,7 @@ namespace Resource_Generator
         /// <param name="pointQueue">Queue to add border points to.</param>
         /// <param name="iPoint">Point to check around.</param>
         /// <param name="plateIndex">Index of plate.</param>
-        private static void CheckBorderPoints(ConcurrentQueue<OverlapPoint> pointQueue, IPoint iPoint, int plateIndex)
+        private static void CheckBorderPoints(Queue<OverlapPoint> pointQueue, IPoint iPoint, int plateIndex)
         {
             SimplePoint[] newPoints = iPoint.FindNeighborPoints();
             foreach (SimplePoint newSimplePoint in newPoints)
@@ -164,7 +164,7 @@ namespace Resource_Generator
         /// <param name="pointQueue">Point queue to withdraw point from.</param>
         /// <param name="borderPoint">Border point to dequeue and check.</param>
         /// <returns>True if still valid border point, otherwise false.</returns>
-        private static bool DequeueBorderPoint(ConcurrentQueue<OverlapPoint> pointQueue, out OverlapPoint borderPoint)
+        private static bool DequeueBorderPoint(Queue<OverlapPoint> pointQueue, out OverlapPoint borderPoint)
         {
             if (pointQueue.TryDequeue(out borderPoint))
             {
@@ -223,7 +223,7 @@ namespace Resource_Generator
         /// </summary>
         private static void ExpandPlates()
         {
-            ConcurrentQueue<OverlapPoint> borderPoints = new ConcurrentQueue<OverlapPoint>();
+            Queue<OverlapPoint> borderPoints = new Queue<OverlapPoint>();
             for (int i = 0; i < platePoints.Length; i++)
             {
                 FindPlateBorders(platePoints[i], borderPoints, i);
@@ -263,7 +263,7 @@ namespace Resource_Generator
         /// <param name="iPlatePoints">List of plate points.</param>
         /// <param name="pointQueue">Plate Point queue to add to.</param>
         /// <param name="plateIndex">Which plate we are searching.</param>
-        private static void FindPlateBorders(List<SimplePoint> iPlatePoints, ConcurrentQueue<OverlapPoint> pointQueue, int plateIndex)
+        private static void FindPlateBorders(List<SimplePoint> iPlatePoints, Queue<OverlapPoint> pointQueue, int plateIndex)
         {
             for (int i = 0; i < iPlatePoints.Count; i++)
             {
