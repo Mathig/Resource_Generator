@@ -1,9 +1,12 @@
-﻿namespace Resource_Generator
+﻿using System.Xml.Serialization;
+
+namespace Resource_Generator
 {
     /// <summary>
     /// Class for containing plate data.
     /// </summary>
-    internal class PlateData
+    [XmlRootAttribute(IsNullable = false)]
+    public class PlateData
     {
         /// <summary>
         /// Contains data on plates direction.

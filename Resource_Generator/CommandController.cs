@@ -62,7 +62,7 @@ namespace Resource_Generator
             FileName rulesLocation = InputFileName("Generate Height Rules");
             FileName inDataLocation = InputFileName("Point Data");
             FileName outDataLocation = InputFileName("Height Data");
-            AltitudeMapRules rules = RulesInput.LoadAltitudeRules(rulesLocation.Name);
+            AltitudeMapRules rules = (AltitudeMapRules)RulesInput.LoadRules(rulesLocation.Name, AltitudeMapRules.ClassName);
             PlatePoint[,] inPointData = PointIO.OpenPointData(inDataLocation.Name, rules);
             double[,] heightMap = GenerateAltitudeMap.Run(inPointData, rules);
             PointIO.SaveHeightImage(outDataLocation.Name, heightMap);
@@ -79,7 +79,7 @@ namespace Resource_Generator
             FileName inRainLocation = InputFileName("Rainfall Data");
             FileName outErosionLocation = InputFileName("Erosion Data");
             FileName outIsWaterLocation = InputFileName("Is Water Data");
-            ErosionMapRules rules = RulesInput.LoadErosionRules(rulesLocation.Name);
+            ErosionMapRules rules = (ErosionMapRules)RulesInput.LoadRules(rulesLocation.Name,ErosionMapRules.ClassName);
             double[,] heightMap = PointIO.OpenDoubleData(inHeightLocation.Name + ".bin", 2 * rules.xHalfSize, rules.ySize);
             double[,] rainfallMap = new double[2 * rules.xHalfSize, rules.ySize];
             for (int i = 0; i < rules.numberSeasons; i++)
@@ -107,7 +107,7 @@ namespace Resource_Generator
             FileName rulesLocation = InputFileName("Generate Rules");
             FileName outDataLocation = InputFileName("Point Data");
             FileName outImageLocation = InputFileName("Point Image");
-            GenerateRules rules = RulesInput.LoadGenerateRules(rulesLocation.Name);
+            GenerateRules rules = (GenerateRules)RulesInput.LoadRules(rulesLocation.Name, GenerateRules.ClassName);
             PlatePoint[,] pointData = GeneratePlateData.Run(rules);
             PointIO.SavePointData(outDataLocation.Name, rules, pointData);
             PointIO.SavePointImage(outImageLocation.Name, rules, pointData);
@@ -122,7 +122,7 @@ namespace Resource_Generator
             FileName rulesLocation = InputFileName("Rainfall Rules");
             FileName inDataLocation = InputFileName("Height Map Data");
             FileName outDataLocation = InputFileName("Rainfall Data");
-            RainfallMapRules rules = RulesInput.LoadRainfallRules(rulesLocation.Name);
+            RainfallMapRules rules = (RainfallMapRules)RulesInput.LoadRules(rulesLocation.Name, RainfallMapRules.ClassName);
             double[,] heightMap = PointIO.OpenDoubleData(inDataLocation.Name + ".bin", 2 * rules.xHalfSize, rules.ySize);
             double[,,] rainfallMap = GenerateRainfallMap.Run(heightMap, rules);
             for (int i = 0; i < rainfallMap.GetLength(2); i++)
@@ -204,7 +204,7 @@ namespace Resource_Generator
             FileName inPointDataLocation = InputFileName("Source Point Data");
             FileName outPointDataLocation = InputFileName("Destination Point Data");
             FileName plateImageLocation = InputFileName("Image");
-            MoveRules rules = RulesInput.LoadMoveRules(rulesLocation.Name);
+            MoveRules rules = (MoveRules)RulesInput.LoadRules(rulesLocation.Name, MoveRules.ClassName);
             PlateData plateData = PlateIO.OpenPlateData(plateDataLocation.Name);
             PlatePoint[,] inPointData = PointIO.OpenPointData(inPointDataLocation.Name, rules);
             PlatePoint[,] outPointData = MovePlatesData.Run(rules, plateData, inPointData);

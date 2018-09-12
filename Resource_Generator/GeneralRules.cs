@@ -1,9 +1,12 @@
-﻿namespace Resource_Generator
+﻿using System.Xml.Serialization;
+
+namespace Resource_Generator
 {
     /// <summary>
     /// Contains General Rules for all functions.
     /// </summary>
-    internal class GeneralRules
+    [XmlRootAttribute(IsNullable = false)]
+    public class GeneralRules
     {
         /// <summary>
         /// Current Time.

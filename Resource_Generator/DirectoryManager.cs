@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Xml.Serialization;
 
 namespace Resource_Generator
 {
@@ -126,64 +127,107 @@ namespace Resource_Generator
         /// <param name="directory">Directory to use for creating new files.</param>
         public static void GenerateDefaultFiles(string directory)
         {
-            using (StreamWriter file = new StreamWriter(directory + "\\GenerationRules.xml", false))
+            AltitudeMapRules altitudeMapRules = new AltitudeMapRules
             {
-                file.WriteLine("<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"yes\"?>");
-                file.WriteLine("<root>");
-                file.WriteLine("<Handler Generation_Length = \"10\"/>");
-                file.WriteLine("<General Plate_Count = \"10\" X_Half_Size = \"1000\" Y_Size = \"1000\" Current_Time = \"0\" Max_Buildup = \"0\"/>");
-                for (int i = 0; i < 10; i++)
-                {
-                    file.WriteLine("<Magnitude index = \"" + i.ToString() + "\" value = \"" + (16 - i).ToString() + "\"/>");
-                    file.WriteLine("<Point_Concentration index = \"" + i.ToString() + "\" value = \"0.999\"/>");
-                    file.WriteLine("<Radius index = \"" + i.ToString() + "\" value = \"" + (Math.Round(Math.Sin(Math.PI * (12 - i) / 120), 2)).ToString() + "\"/>");
-                }
-                file.WriteLine("<Cutoff value = \"" + (1000 * 1000 * 3 / 2).ToString() + "\"/>");
-                file.WriteLine("</root>");
-            }
-            using (StreamWriter file = new StreamWriter(directory + "\\MoveRules.xml", false))
-            {
-                file.WriteLine("<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"yes\"?>");
-                file.WriteLine("<root>");
-                file.WriteLine("<General Plate_Count = \"10\" X_Half_Size = \"1000\" Y_Size = \"1000\" Current_Time = \"0\" Max_Buildup = \"0\"/>");
-                file.WriteLine("<MoveRules Overlap_Factor = \"0.6\" Time_Step = \"1\" Number_Steps = \"10\"/>");
-                file.WriteLine("</root>");
-            }
+                currentTime = 0,
+                maxBuildup = 0,
+                plateCount = 10,
+                xHalfSize = 1000,
+                ySize = 1000
+            };
             using (StreamWriter file = new StreamWriter(directory + "\\GenerateAltitudeRules.xml", false))
             {
-                file.WriteLine("<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"yes\"?>");
-                file.WriteLine("<root>");
-                file.WriteLine("<General Plate_Count = \"10\" X_Half_Size = \"1000\" Y_Size = \"1000\" Current_Time = \"10\" Max_Buildup = \"0\"/>");
-                file.WriteLine("</root>");
+                XmlSerializer serializer = new XmlSerializer(typeof(AltitudeMapRules));
+                serializer.Serialize(file, altitudeMapRules);
             }
-            using (StreamWriter file = new StreamWriter(directory + "\\GenerateRainfallRules.xml", false))
+
+            ErosionMapRules erosionMapRules = new ErosionMapRules
             {
-                file.WriteLine("<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"yes\"?>");
-                file.WriteLine("<root>");
-                file.WriteLine("<General Plate_Count = \"10\" X_Half_Size = \"1000\" Y_Size = \"1000\" Current_Time = \"1\" Max_Buildup = \"0\"/>");
-                file.WriteLine("<Rainfall Axis_Tilt = \"10\" Number_of_Seasons = \"4\" Ocean_Weight = \"0.125\" Altitude_Weight = \"0.001\" Land_Weight = \"5\"/>");
-                file.WriteLine("</root>");
-            }
+                currentTime = 0,
+                maxBuildup = 0,
+                plateCount = 10,
+                xHalfSize = 1000,
+                ySize = 1000,
+                numberSeasons = 4,
+                waterThreshold = 0.1
+            };
             using (StreamWriter file = new StreamWriter(directory + "\\GenerateErosionRules.xml", false))
             {
-                file.WriteLine("<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"yes\"?>");
-                file.WriteLine("<root>");
-                file.WriteLine("<General Plate_Count = \"10\" X_Half_Size = \"1000\" Y_Size = \"1000\" Current_Time = \"1\" Max_Buildup = \"0\"/>");
-                file.WriteLine("<Erosion Number_of_Seasons = \"4\" Water_Threshold = \"0.1\"/>");
-                file.WriteLine("</root>");
+                XmlSerializer serializer = new XmlSerializer(typeof(ErosionMapRules));
+                serializer.Serialize(file, erosionMapRules);
             }
+
+            GenerateRules generateRules = new GenerateRules
+            {
+                currentTime = 0,
+                maxBuildup = 0,
+                plateCount = 10,
+                xHalfSize = 1000,
+                ySize = 1000,
+                cutOff = 1000 * 1000 * 3 / 2,
+                magnitude = new double[10],
+                pointConcentration = new double[10],
+                radius = new double[10]
+            };
+            for (int i = 0; i < 10; i++)
+            {
+                generateRules.magnitude[i] = 16 - i;
+                generateRules.pointConcentration[i] = 0.999;
+                generateRules.radius[i] = Math.Round(Math.Sin(Math.PI * (12 - i) / 120), 2);
+            }
+            using (StreamWriter file = new StreamWriter(directory + "\\GenerationRules.xml", false))
+            {
+                XmlSerializer serializer = new XmlSerializer(typeof(GenerateRules));
+                serializer.Serialize(file, generateRules);
+            }
+
+            MoveRules moveRules = new MoveRules
+            {
+                currentTime = 0,
+                maxBuildup = 0,
+                plateCount = 10,
+                xHalfSize = 1000,
+                ySize = 1000,
+                OverlapFactor = 0.6,
+                timeStep = 1,
+                numberSteps = 10
+            };
+            using (StreamWriter file = new StreamWriter(directory + "\\MoveRules.xml", false))
+            {
+                XmlSerializer serializer = new XmlSerializer(typeof(MoveRules));
+                serializer.Serialize(file, moveRules);
+            }
+            RainfallMapRules rainfallMapRules = new RainfallMapRules
+            {
+                currentTime = 0,
+                maxBuildup = 0,
+                plateCount = 10,
+                xHalfSize = 1000,
+                ySize = 1000,
+                altitudeWeight = 0.001,
+                axisTilt = 10,
+                numberSeasons = 4,
+                oceanWeight = 0.125,
+                landWeight = 5
+            };
             using (StreamWriter file = new StreamWriter(directory + "\\PlateData.xml", false))
             {
-                file.WriteLine("<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"yes\"?>");
-                file.WriteLine("<root>");
-                file.WriteLine("<Handler Plate_Count = \"10\"/>");
-                for (int i = 0; i < 10; i++)
-                {
-                    double angleOne = i * Math.PI / 4.5;
-                    angleOne = Math.Round(angleOne, 3);
-                    file.WriteLine("<Plate Plate_Index = \"" + i.ToString() + "\" Speed = \"0.02\" Direction_One = \"" + (angleOne).ToString() + "\" Direction_Two = \"" + (angleOne).ToString() + "\"/>");
-                }
-                file.WriteLine("</root>");
+                XmlSerializer serializer = new XmlSerializer(typeof(RainfallMapRules));
+                serializer.Serialize(file, rainfallMapRules);
+            }
+            PlateData plateData = new PlateData
+            {
+                Direction = new double[10][],
+                Speed = new double[10]
+            };
+            for (int i = 0; i < 10; i++)
+            {
+                plateData.Direction[i] = new double[2];
+                double angleOne = i * Math.PI / 4.5;
+                angleOne = Math.Round(angleOne, 3);
+                plateData.Speed[i] = 0.02;
+                plateData.Direction[i][0] = angleOne;
+                plateData.Direction[i][1] = angleOne;
             }
         }
 

@@ -1,13 +1,14 @@
 ﻿using System;
 using System.IO;
 using System.Xml;
+using System.Xml.Serialization;
 
 namespace Resource_Generator
 {
     /// <summary>
     /// Class for inputting and outputting plate data.
     /// </summary>
-    internal static class PlateIO
+    public static class PlateIO
     {
         /// <summary>
         /// Opens plate data.
@@ -18,41 +19,15 @@ namespace Resource_Generator
         /// <exception cref="FileNotFoundException">File not found.</exception>
         public static PlateData OpenPlateData(string fileName)
         {
-            PlateData plateData = new PlateData();
-            int plateCount = 0;
             try
             {
-                XmlReader reader = XmlReader.Create(fileName + ".xml");
-                while (reader.Read())
+                XmlSerializer serializer = new XmlSerializer(typeof(PlateData));
+                PlateData plateData;
+                using (FileStream fileStream = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read))
                 {
-                    if (reader.NodeType == XmlNodeType.Element && reader.Name == "Handler")
-                    {
-                        if (reader.HasAttributes)
-                        {
-                            plateCount = int.Parse(reader.GetAttribute("Plate_Count"));
-                            plateData.Direction = new double[plateCount][];
-                            plateData.Speed = new double[plateCount];
-                            for (int i = 0; i < plateCount; i++)
-                            {
-                                plateData.Direction[i] = new double[2];
-                            }
-                        }
-                    }
-                    if (reader.NodeType == XmlNodeType.Element && reader.Name == "Plate")
-                    {
-                        if (reader.HasAttributes)
-                        {
-                            int index = int.Parse(reader.GetAttribute("Plate_Index"));
-                            if (index >= plateCount)
-                            {
-                                throw new InvalidDataException("Plate Data file has too many plates.");
-                            }
-                            plateData.Speed[index] = double.Parse(reader.GetAttribute("Speed"));
-                            plateData.Direction[index][0] = double.Parse(reader.GetAttribute("Direction_One"));
-                            plateData.Direction[index][1] = double.Parse(reader.GetAttribute("Direction_Two"));
-                        }
-                    }
+                    plateData = (PlateData)serializer.Deserialize(fileStream);
                 }
+                //plateData.CheckData();
                 return plateData;
             }
             catch (FileNotFoundException e)
