@@ -91,7 +91,7 @@ namespace Resource_Generator
                 throw new ArgumentException("Object is not an Overlap Point.");
             }
         }
-        
+
         /// <summary>
         /// Returns neighboring points in an array ordered as above, below, left, then right.
         /// </summary>

@@ -72,7 +72,7 @@ namespace Resource_Generator
         /// <returns>Map of erosion.</returns>
         private static double[,] CalculateErosionMap()
         {
-            double[,] output = new double[2 * rules.xHalfSize, rules.ySize];
+            var output = new double[2 * rules.xHalfSize, rules.ySize];
             for (int x = 0; x < 2 * rules.xHalfSize; x++)
             {
                 for (int y = 0; y < rules.ySize; y++)
@@ -115,8 +115,8 @@ namespace Resource_Generator
         /// <returns>Amount of water flow.</returns>
         private static double CalculateWaterFlow(SimplePoint iPoint)
         {
-            double water = rainWater[iPoint.X, iPoint.Y];
-            SimplePoint[] nearPoints = iPoint.FindNeighborPoints();
+            var water = rainWater[iPoint.X, iPoint.Y];
+            var nearPoints = iPoint.FindNeighborPoints();
             for (int i = 0; i < nearPoints.Length; i++)
             {
                 if (FindLowestNeighbor(nearPoints[i], out SimplePoint testPoint))
@@ -136,7 +136,7 @@ namespace Resource_Generator
         /// <returns>Matrix of points which classify as water.</returns>
         private static bool[,] CheckWaterMap()
         {
-            bool[,] output = new bool[2 * rules.xHalfSize, rules.ySize];
+            var output = new bool[2 * rules.xHalfSize, rules.ySize];
             for (int x = 0; x < 2 * rules.xHalfSize; x++)
             {
                 for (int y = 0; y < rules.ySize; y++)
@@ -198,9 +198,9 @@ namespace Resource_Generator
         private static bool FindLowestNeighbor(SimplePoint inPoint, out SimplePoint outPoint)
         {
             outPoint = inPoint;
-            bool notCenter = false;
-            double lowestHeight = heightMap[inPoint.X, inPoint.Y];
-            SimplePoint[] neighborPoints = inPoint.FindNeighborPoints();
+            var notCenter = false;
+            var lowestHeight = heightMap[inPoint.X, inPoint.Y];
+            var neighborPoints = inPoint.FindNeighborPoints();
             for (int i = 0; i < neighborPoints.Length; i++)
             {
                 if (heightMap[neighborPoints[i].X, neighborPoints[i].Y] < lowestHeight)
@@ -222,23 +222,8 @@ namespace Resource_Generator
         private static int SectionCount(out int sectionSpacing, out int firstSpacing)
         {
             int sectionCount;
-            ThreadPool.GetAvailableThreads(out int threadCount, out _);
-            if (rules.xHalfSize > 50 * threadCount)
-            {
-                sectionCount = 10 * threadCount;
-            }
-            else if (rules.xHalfSize > 10 * threadCount)
-            {
-                sectionCount = 2 * threadCount;
-            }
-            else if (rules.xHalfSize > 50)
-            {
-                sectionCount = 10;
-            }
-            else
-            {
-                sectionCount = 1;
-            }
+            var processorCount = Environment.ProcessorCount;
+            sectionCount = rules.xHalfSize > 20 * processorCount ? 4 * processorCount : 1;
             sectionSpacing = (int)Math.Floor(2 * (double)rules.xHalfSize / sectionCount);
             firstSpacing = 2 * rules.xHalfSize - sectionCount * sectionSpacing;
             return sectionCount;
@@ -247,11 +232,12 @@ namespace Resource_Generator
         /// <summary>
         /// Flows water for the rest of the map.
         /// </summary>
-        /// <param name="start">Start point for section.</param>
-        /// <param name="end">End point for section.</param>
+        /// <param name="sectionCount">Spacing between sections for multi-threading.</param>
+        /// <param name="firstSpacing">Spacing of first section for multi-threading.</param>
+        /// <param name="sectionSpacing">Spacing for non-first section for multi-threading.</param>
         private static void WaterFullFlow(int sectionSpacing, int firstSpacing, int sectionCount)
         {
-            List<HeightPoint> listPoints = new List<HeightPoint>();
+            var listPoints = new List<HeightPoint>();
             for (int i = 0; i < sectionCount; i++)
             {
                 int start;
@@ -291,10 +277,10 @@ namespace Resource_Generator
             }
             listPoints.Sort();
             listPoints.Reverse();
-            Queue<SimplePoint> explodingPoints = new Queue<SimplePoint>();
+            var explodingPoints = new Queue<SimplePoint>();
             for (int i = 0; i < listPoints.Count; i++)
             {
-                SimplePoint newPoint = WaterPointFlow(listPoints[i].X, listPoints[i].Y);
+                var newPoint = WaterPointFlow(listPoints[i].X, listPoints[i].Y);
                 if (newPoint.CompareTo(listPoints[i]) == 0)
                 {
                     explodingPoints.Enqueue(newPoint);
@@ -302,9 +288,9 @@ namespace Resource_Generator
             }
             while (explodingPoints.Count != 0)
             {
-                SimplePoint queuePoint = explodingPoints.Dequeue();
+                var queuePoint = explodingPoints.Dequeue();
                 AdjustPointAltitude(queuePoint);
-                SimplePoint newPoint = WaterPointFlow(queuePoint.X, queuePoint.Y);
+                var newPoint = WaterPointFlow(queuePoint.X, queuePoint.Y);
                 explodingPoints.Enqueue(newPoint);
             }
         }
@@ -317,7 +303,7 @@ namespace Resource_Generator
         /// <returns>Destination for water flow.</returns>
         private static SimplePoint WaterPointFlow(int x, int y)
         {
-            SimplePoint point = new SimplePoint(x, y);
+            var point = new SimplePoint(x, y);
             if (FindLowestNeighbor(point, out SimplePoint destinationPoint))
             {
                 waterContained[destinationPoint.X, destinationPoint.Y] += waterContained[point.X, point.Y];
@@ -345,7 +331,7 @@ namespace Resource_Generator
         /// <param name="end">End point for section.</param>
         private static void WaterSectionFlow(int start, int end)
         {
-            List<HeightPoint> listPoints = new List<HeightPoint>();
+            var listPoints = new List<HeightPoint>();
             for (int x = start + 1; x < end - 1; x++)
             {
                 for (int y = 1; y < rules.ySize - 1; y++)
@@ -358,10 +344,10 @@ namespace Resource_Generator
             }
             listPoints.Sort();
             listPoints.Reverse();
-            Queue<SimplePoint> explodingPoints = new Queue<SimplePoint>();
+            var explodingPoints = new Queue<SimplePoint>();
             for (int i = 0; i < listPoints.Count; i++)
             {
-                SimplePoint newPoint = WaterPointFlow(listPoints[i].X, listPoints[i].Y);
+                var newPoint = WaterPointFlow(listPoints[i].X, listPoints[i].Y);
                 if (newPoint.CompareTo(listPoints[i]) == 0)
                 {
                     explodingPoints.Enqueue(newPoint);
@@ -369,9 +355,9 @@ namespace Resource_Generator
             }
             while (explodingPoints.Count != 0)
             {
-                SimplePoint queuePoint = explodingPoints.Dequeue();
+                var queuePoint = explodingPoints.Dequeue();
                 AdjustPointAltitude(queuePoint);
-                SimplePoint newPoint = WaterPointFlow(queuePoint.X, queuePoint.Y);
+                var newPoint = WaterPointFlow(queuePoint.X, queuePoint.Y);
                 if (newPoint.X > start && newPoint.X < end - 1 && newPoint.Y > 0 && newPoint.Y < rules.ySize - 1)
                 {
                     explodingPoints.Enqueue(newPoint);
@@ -382,9 +368,9 @@ namespace Resource_Generator
         /// <summary>
         /// Runs the erosion program.
         /// </summary>
-        /// <param name="heightMap">Height map.</param>
+        /// <param name="inHeightMap">Height map.</param>
         /// <param name="rainfallMap">Rainfall map.</param>
-        /// <param name="rules">Rules for erosion.</param>
+        /// <param name="inRules">Rules for erosion.</param>
         /// <param name="isWater">Whether a point is above a certain threshold for being water.</param>
         /// <param name="erosionMap">How much erosion each point experiences.</param>
         public static void Run(double[,] inHeightMap, double[,] rainfallMap, ErosionMapRules inRules, out bool[,] isWater, out double[,] erosionMap)
@@ -394,7 +380,7 @@ namespace Resource_Generator
             waterContained = rainfallMap;
             heightMap = inHeightMap;
             rainWater = rainfallMap;
-            int sectionCount = SectionCount(out int sectionSpacing, out int firstSpacing);
+            var sectionCount = SectionCount(out int sectionSpacing, out int firstSpacing);
             Parallel.For(0, (sectionCount), (i) =>
             {
                 if (i == 0)

@@ -43,7 +43,7 @@ namespace Resource_Generator
         /// <returns>Array of points for output.</returns>
         private static PlatePoint[,] CompileData()
         {
-            PlatePoint[,] output = new PlatePoint[2 * rules.xHalfSize, rules.ySize];
+            var output = new PlatePoint[2 * rules.xHalfSize, rules.ySize];
             Parallel.For(0, (rules.plateCount), (i) =>
             {
                 foreach (PlatePoint iPoint in plates[i].PlatePoints)
@@ -86,7 +86,7 @@ namespace Resource_Generator
         /// </summary>
         /// <param name="triggerPoint">The point which called the event.</param>
         /// <param name="changedPoint">The point to be affected.</param>
-        private static void ContinentalConvergent(BasePoint triggerPoint, BasePoint changedPoint)
+        private static void ContinentalConvergent(in BasePoint triggerPoint, in BasePoint changedPoint)
         {
             newContinentalCollision[changedPoint.X, changedPoint.Y] += 1;
         }
@@ -94,12 +94,12 @@ namespace Resource_Generator
         /// <summary>
         /// Processes a continental point which is at a convergent boundary.
         /// </summary>
-        /// <param name="iPoint">Point in question.</param>
-        /// <param name="index">Index of point.</param>
-        private static void ContinentalConvergent(BasePoint overlapPoint, int plateIndex)
+        /// <param name="overlapPoint">Point in question.</param>
+        /// <param name="plateIndex">Index of plate for point.</param>
+        private static void ContinentalConvergent(in BasePoint overlapPoint, int plateIndex)
         {
-            BasePoint borderPoint = FindBorderPoint(overlapPoint, plateIndex);
-            List<BasePoint> affectedPoints = FindAffectedPoints(borderPoint, plateIndex);
+            var borderPoint = FindBorderPoint(overlapPoint, plateIndex);
+            var affectedPoints = FindAffectedPoints(borderPoint, plateIndex);
             foreach (BasePoint iPoint in affectedPoints)
             {
                 ContinentalConvergent(overlapPoint, iPoint);
@@ -113,7 +113,7 @@ namespace Resource_Generator
         /// <returns>PlatePoint to keep.</returns>
         private static PlatePoint Convergent(List<PlatePoint> points)
         {
-            PlatePoint basePoint = points[0];
+            var basePoint = points[0];
             for (int i = 0; i < points.Count; i++)
             {
                 if (points[i].IsContinental)
@@ -138,7 +138,7 @@ namespace Resource_Generator
         /// <param name="platePoint">Point which is being subducted.</param>
         private static void Convergent(PlatePoint platePoint)
         {
-            BasePoint position = new BasePoint(platePoint.X, platePoint.Y);
+            var position = new BasePoint(platePoint.X, platePoint.Y);
             if (platePoint.IsContinental)
             {
                 ContinentalConvergent(position, platePoint.PlateNumber);
@@ -154,12 +154,12 @@ namespace Resource_Generator
         /// </summary>
         private static void ExpandPlates()
         {
-            Queue<OverlapPoint> borderPoints = new Queue<OverlapPoint>();
+            var borderPoints = new Queue<OverlapPoint>();
             for (int i = 0; i < rules.plateCount; i++)
             {
                 for (int j = 0; j < plates[i].PlatePoints.Count; j++)
                 {
-                    SimplePoint[] newPoints = plates[i].PlatePoints[j].FindNeighborPoints();
+                    var newPoints = plates[i].PlatePoints[j].FindNeighborPoints();
                     for (int k = 0; k < 4; k++)
                     {
                         if (!pointActives[newPoints[k].X, newPoints[k].Y])
@@ -171,17 +171,17 @@ namespace Resource_Generator
             }
             while (borderPoints.Count != 0)
             {
-                OverlapPoint borderPoint = borderPoints.Dequeue();
+                var borderPoint = borderPoints.Dequeue();
                 if (!pointActives[borderPoint.X, borderPoint.Y])
                 {
                     pointActives[borderPoint.X, borderPoint.Y] = true;
                     plates[borderPoint.plateIndex[0]].PlatePoints.Add(new PlatePoint(borderPoint, rules.currentTime));
-                    SimplePoint[] newPointsP = borderPoint.FindNeighborPoints();
+                    var newPointsP = borderPoint.FindNeighborPoints();
                     for (int k = 0; k < 4; k++)
                     {
                         if (!pointActives[newPointsP[k].X, newPointsP[k].Y])
                         {
-                            OverlapPoint newPoint = new OverlapPoint(newPointsP[k], borderPoint.plateIndex[0]);
+                            var newPoint = new OverlapPoint(newPointsP[k], borderPoint.plateIndex[0]);
                             borderPoints.Enqueue(newPoint);
                         }
                     }
@@ -195,10 +195,12 @@ namespace Resource_Generator
         /// <param name="triggerPoint">Border point to start search from.</param>
         /// <param name="plateIndex">Plate to search on.</param>
         /// <returns>Affected points.</returns>
-        private static List<BasePoint> FindAffectedPoints(BasePoint triggerPoint, int plateIndex)
+        private static List<BasePoint> FindAffectedPoints(in BasePoint triggerPoint, int plateIndex)
         {
-            List<BasePoint> list = new List<BasePoint>();
-            list.Add(triggerPoint);
+            var list = new List<BasePoint>
+            {
+                triggerPoint
+            };
             return list;
         }
 
@@ -208,7 +210,7 @@ namespace Resource_Generator
         /// <param name="triggerPoint">Triggered point to start search from.</param>
         /// <param name="plateIndex">Plate to search on.</param>
         /// <returns>Border point.</returns>
-        private static BasePoint FindBorderPoint(BasePoint triggerPoint, int plateIndex)
+        private static BasePoint FindBorderPoint(in BasePoint triggerPoint, int plateIndex)
         {
             return triggerPoint;
         }
@@ -221,8 +223,8 @@ namespace Resource_Generator
         /// <returns>List of neighboring points around target point.</returns>
         private static List<PlatePoint> FindNeighborPlatePoints(int inPlate, IPoint targetPoint)
         {
-            SimplePoint[] potentialNeighbors = targetPoint.FindNeighborPoints();
-            List<PlatePoint> pointList = new List<PlatePoint>();
+            var potentialNeighbors = targetPoint.FindNeighborPoints();
+            var pointList = new List<PlatePoint>();
             foreach (SimplePoint iPoint in potentialNeighbors)
             {
                 if (pointHistories[iPoint.X, iPoint.Y].PlateNumber == inPlate)
@@ -241,12 +243,12 @@ namespace Resource_Generator
         /// <returns>List of matching points.</returns>
         private static List<PlatePoint> FindPoints(PlatePoint targetPoint, int[] platePointIndexes)
         {
-            List<PlatePoint> foundPoints = new List<PlatePoint>();
+            var foundPoints = new List<PlatePoint>();
             for (int i = 0; i < rules.plateCount; i++)
             {
                 if (platePointIndexes[i] < plates[i].PlatePoints.Count)
                 {
-                    PlatePoint platePoint = plates[i].PlatePoints[platePointIndexes[i]];
+                    var platePoint = plates[i].PlatePoints[platePointIndexes[i]];
                     if (targetPoint.CompareTo(platePoint) == 0)
                     {
                         foundPoints.Add(platePoint);
@@ -263,14 +265,14 @@ namespace Resource_Generator
         {
             Parallel.For(0, rules.plateCount, (i) =>
             {
-                double[] angle = new double[3] { plates[i].Direction[0], plates[i].Direction[1], rules.timeStep * plates[i].Speed };
-                int previousPointCount = plates[i].PlatePoints.Count;
+                var angle = new double[3] { plates[i].Direction[0], plates[i].Direction[1], rules.timeStep * plates[i].Speed };
+                var previousPointCount = plates[i].PlatePoints.Count;
                 for (int j = 0; j < previousPointCount; j++)
                 {
-                    PlatePoint point = plates[i].PlatePoints[j];
+                    var point = plates[i].PlatePoints[j];
                     if (point.Transform(angle, out List<SimplePoint> bonusPoints, rules.ySize))
                     {
-                        double[] Rangle = new double[3] { angle[0], angle[1], -1 * angle[2] };
+                        var Rangle = new double[3] { angle[0], angle[1], -1 * angle[2] };
                         foreach (SimplePoint bonusPoint in bonusPoints)
                         {
                             plates[i].PlatePoints.Add(InterlacePlatePoint(i, bonusPoint, Rangle));
@@ -290,21 +292,21 @@ namespace Resource_Generator
         /// <returns>Average of nearby points from <see cref="PastHeights"/>.</returns>
         private static PlatePoint InterlacePlatePoint(int inPlate, SimplePoint newPoint, double[] angle)
         {
-            BasePoint oldPoint = new BasePoint((new BasePoint(newPoint)).Transform(angle));
+            var oldPoint = new BasePoint((new BasePoint(newPoint)).Transform(angle));
             oldPoint.GridTransform(angle, out double xCoord, out double yCoord);
-            List<PlatePoint> pointList = FindNeighborPlatePoints(inPlate, oldPoint);
+            var pointList = FindNeighborPlatePoints(inPlate, oldPoint);
             return PlatePoint.ResolveSamePlateNeighbors(pointList, xCoord, yCoord, newPoint, inPlate);
         }
 
         /// <summary>
         /// Processes an oceanic point which is at a convergent boundary.
         /// </summary>
-        /// <param name="iPoint">Point in question.</param>
-        /// <param name="index">Index of point.</param>
-        private static void OceanicConvergent(BasePoint overlapPoint, int plateIndex)
+        /// <param name="overlapPoint">Point in question.</param>
+        /// <param name="plateIndex">Index of plate of point.</param>
+        private static void OceanicConvergent(in BasePoint overlapPoint, int plateIndex)
         {
-            BasePoint borderPoint = FindBorderPoint(overlapPoint, plateIndex);
-            List<BasePoint> affectedPoints = FindAffectedPoints(borderPoint, plateIndex);
+            var borderPoint = FindBorderPoint(overlapPoint, plateIndex);
+            var affectedPoints = FindAffectedPoints(borderPoint, plateIndex);
             foreach (BasePoint iPoint in affectedPoints)
             {
                 OceanicConvergent(overlapPoint, iPoint);
@@ -316,7 +318,7 @@ namespace Resource_Generator
         /// </summary>
         /// <param name="triggerPoint">The point which called the event.</param>
         /// <param name="changedPoint">The point to be affected.</param>
-        private static void OceanicConvergent(BasePoint triggerPoint, BasePoint changedPoint)
+        private static void OceanicConvergent(in BasePoint triggerPoint, in BasePoint changedPoint)
         {
             newOceanicCollision[changedPoint.X, changedPoint.Y] += 1;
         }
@@ -357,11 +359,10 @@ namespace Resource_Generator
         /// <summary>
         /// Resolves non-trivial point overlaps.
         /// </summary>
-        /// <param name="input">Point overlaps to resolve.</param>
         private static void ResolveOtherOverlap()
         {
-            int[] index = new int[rules.plateCount];
-            List<PlatePoint>[] newLists = new List<PlatePoint>[rules.plateCount];
+            var index = new int[rules.plateCount];
+            var newLists = new List<PlatePoint>[rules.plateCount];
             for (int i = 0; i < rules.plateCount; i++)
             {
                 plates[i].PlatePoints.Sort();
@@ -371,8 +372,8 @@ namespace Resource_Generator
             {
                 for (int x = 0; x < 2 * rules.xHalfSize; x++)
                 {
-                    PlatePoint targetPoint = new PlatePoint(new SimplePoint(x, y));
-                    List<PlatePoint> points = FindPoints(targetPoint, index);
+                    var targetPoint = new PlatePoint(new SimplePoint(x, y));
+                    var points = FindPoints(targetPoint, index);
                     if (points.Count == 1)
                     {
                         newLists[points[0].PlateNumber].Add(points[0]);
@@ -380,7 +381,7 @@ namespace Resource_Generator
                     }
                     else if (points.Count > 1)
                     {
-                        PlatePoint basePoint = Convergent(points);
+                        var basePoint = Convergent(points);
                         newLists[basePoint.PlateNumber].Add(basePoint);
                         for (int i = 0; i < points.Count; i++)
                         {
@@ -403,15 +404,15 @@ namespace Resource_Generator
             Parallel.ForEach(plates, (plate) =>
             {
                 plate.PlatePoints.Sort();
-                List<PlatePoint> tempList = new List<PlatePoint>();
-                int index = 0;
+                var tempList = new List<PlatePoint>();
+                var index = 0;
                 for (int i = 1; i < plate.PlatePoints.Count; i++)
                 {
                     if (index < i)
                     {
                         if (plate.PlatePoints[index].CompareTo(plate.PlatePoints[i]) == 0)
                         {
-                            List<PlatePoint> samePoints = new List<PlatePoint>();
+                            var samePoints = new List<PlatePoint>();
                             for (int j = index; j < plate.PlatePoints.Count; j++)
                             {
                                 if (plate.PlatePoints[index].CompareTo(plate.PlatePoints[j]) == 0)
@@ -446,16 +447,15 @@ namespace Resource_Generator
         /// Adds points to plates by tracing them backwards.
         /// </summary>
         /// <param name="input">Point to add.</param>
-        /// <param name="timeStep">Time factor for moving plates.</param>
-        private static void ReverseAdd(BasePoint input)
+        private static void ReverseAdd(in BasePoint input)
         {
             for (int i = 0; i < rules.plateCount; i++)
             {
-                double[] angle = new double[3]
+                var angle = new double[3]
                 {
                     plates[i].Direction[0], plates[i].Direction[1], -1 * plates[i].Speed * rules.timeStep
                 };
-                SimplePoint reversedPoint = input.Transform(angle);
+                var reversedPoint = input.Transform(angle);
                 if (pointHistories[reversedPoint.X, reversedPoint.Y].PlateNumber == i)
                 {
                     plates[i].PlatePoints.Add(InterlacePlatePoint(i, new SimplePoint(input.X, input.Y), angle));
@@ -486,7 +486,7 @@ namespace Resource_Generator
         /// </summary>
         /// <param name="inRules">Rules to move plates.</param>
         /// <param name="plateData">Initial plate data.</param>
-        /// <param name="points">Initial plate point data.</param>
+        /// <param name="inPoints">Initial plate point data.</param>
         /// <returns>Plate points.</returns>
         public static PlatePoint[,] Run(MoveRules inRules, PlateData plateData, PlatePoint[,] inPoints)
         {

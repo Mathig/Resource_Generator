@@ -132,10 +132,10 @@ namespace Resource_Generator
         /// Saves plate data as an image file.
         /// </summary>
         /// <param name="fileName">File to store at, not including extension.</param>
-        /// <param name="heightData">Height data to store.</param>
+        /// <param name="plateData">Plate data to store.</param>
         private static void SavePlateImage(string fileName, int[,] plateData)
         {
-            double[,] largerData = new double[plateData.GetLength(0), plateData.GetLength(1)];
+            var largerData = new double[plateData.GetLength(0), plateData.GetLength(1)];
             for (int x = 0; x < plateData.GetLength(0); x++)
             {
                 for (int y = 0; y < plateData.GetLength(1); y++)
@@ -143,7 +143,7 @@ namespace Resource_Generator
                     largerData[x, y] = plateData[x, y];
                 }
             }
-            int[,] imageData = ScaleData(largerData);
+            var imageData = ScaleData(largerData);
             SaveImageData(fileName + ".png", imageData);
         }
 
@@ -155,8 +155,8 @@ namespace Resource_Generator
         private static int[,] ScaleData(double[,] data)
         {
             FindMinMax(data, out double min, out double max);
-            double dif = max - min;
-            int[,] output = new int[data.GetLength(0), data.GetLength(1)];
+            var dif = max - min;
+            var output = new int[data.GetLength(0), data.GetLength(1)];
             Parallel.For(0, data.GetLength(0), (x) =>
             {
                 for (int y = 0; y < data.GetLength(1); y++)
@@ -178,7 +178,7 @@ namespace Resource_Generator
         /// <exception cref="FileNotFoundException">File could not be found.</exception>
         public static double[,] OpenDoubleData(string fileName, int xSize, int ySize)
         {
-            double[,] data = new double[xSize, ySize];
+            var data = new double[xSize, ySize];
             try
             {
                 using (BinaryReader reader = new BinaryReader(File.Open(fileName, FileMode.Open)))
@@ -213,26 +213,26 @@ namespace Resource_Generator
         /// <exception cref="FileNotFoundException">File could not be found.</exception>
         public static PlatePoint[,] OpenPointData(string fileName, GeneralRules rules)
         {
-            PlatePoint[,] pointData = new PlatePoint[2 * rules.xHalfSize, rules.ySize];
+            var pointData = new PlatePoint[2 * rules.xHalfSize, rules.ySize];
             try
             {
-                int[,] plateNumbers = CheapBinaryIO.Read(fileName + plateNumberExtension, rules.plateCount, 2 * rules.xHalfSize, rules.ySize);
-                bool[,] isContinental = CheapBinaryIO.ReadBinary(fileName + isContinentalExtension, 2 * rules.xHalfSize, rules.ySize);
-                int[,] birthTime = CheapBinaryIO.Read(fileName + birthTimeExtension, rules.currentTime, 2 * rules.xHalfSize, rules.ySize);
-                int[,] xBirthPlace = CheapBinaryIO.Read(fileName + xBirthPlaceExtension, 2 * rules.xHalfSize, 2 * rules.xHalfSize, rules.ySize);
-                int[,] yBirthPlace = CheapBinaryIO.Read(fileName + yBirthPlaceExtension, rules.ySize, 2 * rules.xHalfSize, rules.ySize);
-                int[,] continentalBuildup = CheapBinaryIO.Read(fileName + continentalBuildupExtension, rules.maxBuildup, 2 * rules.xHalfSize, rules.ySize);
-                int[,] continentalRecency = CheapBinaryIO.Read(fileName + continentalRecencyExtension, rules.currentTime, 2 * rules.xHalfSize, rules.ySize);
-                int[,] oceanicBuildup = CheapBinaryIO.Read(fileName + oceanicBuildupExtension, rules.maxBuildup, 2 * rules.xHalfSize, rules.ySize);
-                int[,] oceanicRecency = CheapBinaryIO.Read(fileName + oceanicRecencyExtension, rules.currentTime, 2 * rules.xHalfSize, rules.ySize);
+                var plateNumbers = CheapBinaryIO.Read(fileName + plateNumberExtension, rules.plateCount, 2 * rules.xHalfSize, rules.ySize);
+                var isContinental = CheapBinaryIO.ReadBinary(fileName + isContinentalExtension, 2 * rules.xHalfSize, rules.ySize);
+                var birthTime = CheapBinaryIO.Read(fileName + birthTimeExtension, rules.currentTime, 2 * rules.xHalfSize, rules.ySize);
+                var xBirthPlace = CheapBinaryIO.Read(fileName + xBirthPlaceExtension, 2 * rules.xHalfSize, 2 * rules.xHalfSize, rules.ySize);
+                var yBirthPlace = CheapBinaryIO.Read(fileName + yBirthPlaceExtension, rules.ySize, 2 * rules.xHalfSize, rules.ySize);
+                var continentalBuildup = CheapBinaryIO.Read(fileName + continentalBuildupExtension, rules.maxBuildup, 2 * rules.xHalfSize, rules.ySize);
+                var continentalRecency = CheapBinaryIO.Read(fileName + continentalRecencyExtension, rules.currentTime, 2 * rules.xHalfSize, rules.ySize);
+                var oceanicBuildup = CheapBinaryIO.Read(fileName + oceanicBuildupExtension, rules.maxBuildup, 2 * rules.xHalfSize, rules.ySize);
+                var oceanicRecency = CheapBinaryIO.Read(fileName + oceanicRecencyExtension, rules.currentTime, 2 * rules.xHalfSize, rules.ySize);
 
                 for (int x = 0; x < 2 * rules.xHalfSize; x++)
                 {
                     for (int y = 0; y < rules.ySize; y++)
                     {
-                        SimplePoint point = new SimplePoint(x, y);
-                        SimplePoint birthPoint = new SimplePoint(xBirthPlace[x, y], yBirthPlace[x, y]);
-                        BoundaryHistory history = new BoundaryHistory(continentalBuildup[x, y], continentalRecency[x, y], oceanicBuildup[x, y], oceanicRecency[x, y]);
+                        var point = new SimplePoint(x, y);
+                        var birthPoint = new SimplePoint(xBirthPlace[x, y], yBirthPlace[x, y]);
+                        var history = new BoundaryHistory(continentalBuildup[x, y], continentalRecency[x, y], oceanicBuildup[x, y], oceanicRecency[x, y]);
                         pointData[x, y] = new PlatePoint(point, birthPoint, birthTime[x, y], plateNumbers[x, y], history, isContinental[x, y]);
                     }
                 }
@@ -263,12 +263,12 @@ namespace Resource_Generator
                 using (Image<Rgba32> image = Image.Load(fileName + ".png"))
                 {
                     data = new int[image.Width, image.Height];
-                    List<Rgba32> colorList = new List<Rgba32>();
+                    var colorList = new List<Rgba32>();
                     for (int x = 0; x < image.Width; x++)
                     {
                         for (int y = 0; y < image.Height; y++)
                         {
-                            bool foundColor = false;
+                            var foundColor = false;
                             for (int c = 0; c < colorList.Count; c++)
                             {
                                 if (colorList[c] == image[x, y])
@@ -305,7 +305,7 @@ namespace Resource_Generator
         /// <param name="heightData">Height data to store.</param>
         public static void SaveHeightImage(string fileName, double[,] heightData)
         {
-            int[,] imageData = ScaleData(heightData);
+            var imageData = ScaleData(heightData);
             SaveImageData(fileName + ".png", imageData);
         }
 
@@ -329,19 +329,19 @@ namespace Resource_Generator
         /// Saves point data to the given file.
         /// </summary>
         /// <param name="fileName">File to open.</param>
-        /// <param name="type">Rules for how data will be written.</param>
+        /// <param name="rules">Rules for how data will be written.</param>
         /// <param name="pointData">Data to save.</param>
         public static void SavePointData(string fileName, GeneralRules rules, PlatePoint[,] pointData)
         {
-            int[,] plateNumbers = new int[2 * rules.xHalfSize, rules.ySize];
-            int[,] xBirthPlace = new int[2 * rules.xHalfSize, rules.ySize];
-            int[,] yBirthPlace = new int[2 * rules.xHalfSize, rules.ySize];
-            int[,] birthDate = new int[2 * rules.xHalfSize, rules.ySize];
-            bool[,] isContinental = new bool[2 * rules.xHalfSize, rules.ySize];
-            int[,] continentalBuildup = new int[2 * rules.xHalfSize, rules.ySize];
-            int[,] continentalRecency = new int[2 * rules.xHalfSize, rules.ySize];
-            int[,] oceanicBuildup = new int[2 * rules.xHalfSize, rules.ySize];
-            int[,] oceanicRecency = new int[2 * rules.xHalfSize, rules.ySize];
+            var plateNumbers = new int[2 * rules.xHalfSize, rules.ySize];
+            var xBirthPlace = new int[2 * rules.xHalfSize, rules.ySize];
+            var yBirthPlace = new int[2 * rules.xHalfSize, rules.ySize];
+            var birthDate = new int[2 * rules.xHalfSize, rules.ySize];
+            var isContinental = new bool[2 * rules.xHalfSize, rules.ySize];
+            var continentalBuildup = new int[2 * rules.xHalfSize, rules.ySize];
+            var continentalRecency = new int[2 * rules.xHalfSize, rules.ySize];
+            var oceanicBuildup = new int[2 * rules.xHalfSize, rules.ySize];
+            var oceanicRecency = new int[2 * rules.xHalfSize, rules.ySize];
             for (int x = 0; x < 2 * rules.xHalfSize; x++)
             {
                 for (int y = 0; y < rules.ySize; y++)
@@ -372,11 +372,11 @@ namespace Resource_Generator
         /// Saves point data to an image file.
         /// </summary>
         /// <param name="fileName">File to open.</param>
-        /// <param name="type">Rules for how image will be written.</param>
+        /// <param name="rules">Rules for how image will be written.</param>
         /// <param name="pointData">Data to save.</param>
         public static void SavePointImage(string fileName, GeneralRules rules, PlatePoint[,] pointData)
         {
-            int[,] plateNumbers = new int[2 * rules.xHalfSize, rules.ySize];
+            var plateNumbers = new int[2 * rules.xHalfSize, rules.ySize];
             for (int x = 0; x < 2 * rules.xHalfSize; x++)
             {
                 for (int y = 0; y < rules.ySize; y++)
@@ -391,10 +391,10 @@ namespace Resource_Generator
         /// Saves point plate data to the given file.
         /// </summary>
         /// <param name="fileName">File to open.</param>
-        /// <param name="pointData">Data to save.</param>
+        /// <param name="pointPlateData">Data to save.</param>
         public static void SavePointPlateData(string fileName, int[,] pointPlateData)
         {
-            int plateCount = 0;
+            var plateCount = 0;
             for (int x = 0; x < pointPlateData.GetLength(0); x++)
             {
                 for (int y = 0; y < pointPlateData.GetLength(1); y++)

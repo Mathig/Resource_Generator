@@ -26,9 +26,9 @@ namespace Resource_Generator
         /// <returns>Y altitude of points lying on the zone.</returns>
         private static int[] BaseITC(double[,] heightMap, double pitchEffect)
         {
-            int[] initialITC = new int[2 * rules.xHalfSize];
-            double threshold = pitchEffect * 0.5 * rules.ySize;
-            int midPoint = (int)Math.Round(0.5 * rules.ySize);
+            var initialITC = new int[2 * rules.xHalfSize];
+            var threshold = pitchEffect * 0.5 * rules.ySize;
+            var midPoint = (int)Math.Round(0.5 * rules.ySize);
             for (int x = 0; x < 2 * rules.xHalfSize; x++)
             {
                 double counter = 0;
@@ -78,17 +78,19 @@ namespace Resource_Generator
         /// Calculates a base pressure given the ITC zone.
         /// </summary>
         /// <param name="ITCZone">ITC zone to generate base pressure field with.</param>
+        /// <param name="heightMap">Height map.</param>
+        /// <param name="yearFactor">How much to weight the land's temperature based on time of year.</param>
         /// <returns>Base pressure field.</returns>
         private static double[,] BasePressure(int[] ITCZone, double[,] heightMap, double yearFactor)
         {
-            double[,] output = new double[2 * rules.xHalfSize, rules.ySize];
+            var output = new double[2 * rules.xHalfSize, rules.ySize];
             for (int x = 0; x < 2 * rules.xHalfSize; x++)
             {
-                int ITCZonepoint = ITCZone[x];
-                int polarOne = (int)Math.Round((double)ITCZonepoint / 3);
-                int polarTwo = ITCZonepoint + (int)Math.Round(2 * (double)(rules.ySize - ITCZonepoint) / 3);
-                int subTropicalOne = (int)Math.Round(2 * (double)ITCZonepoint / 3);
-                int subTropicalTwo = ITCZonepoint + (int)Math.Round((double)(rules.ySize - ITCZonepoint) / 3);
+                var ITCZonepoint = ITCZone[x];
+                var polarOne = (int)Math.Round((double)ITCZonepoint / 3);
+                var polarTwo = ITCZonepoint + (int)Math.Round(2 * (double)(rules.ySize - ITCZonepoint) / 3);
+                var subTropicalOne = (int)Math.Round(2 * (double)ITCZonepoint / 3);
+                var subTropicalTwo = ITCZonepoint + (int)Math.Round((double)(rules.ySize - ITCZonepoint) / 3);
                 for (int y = 0; y < ITCZonepoint; y++)
                 {
                     if (heightMap[x, y] != 0)
@@ -135,21 +137,21 @@ namespace Resource_Generator
         /// <returns>Wind map, displayed as x,y,i where i indicates magnitude in left, right, top, below directions.</returns>
         private static double[,,] PressureGradient(double[,] pressureMap)
         {
-            double[,,] output = new double[2 * rules.xHalfSize, rules.ySize, 4];
-            int midPoint = (int)Math.Round(0.5 * rules.ySize);
+            var output = new double[2 * rules.xHalfSize, rules.ySize, 4];
+            var midPoint = (int)Math.Round(0.5 * rules.ySize);
             for (int x = 0; x < 2 * rules.xHalfSize; x++)
             {
                 for (int y = 0; y < rules.ySize; y++)
                 {
-                    SimplePoint[] nearPoints = point[x, y].FindNeighborPoints();
-                    double leftHeight = pressureMap[nearPoints[2].X, nearPoints[2].Y];
-                    double rightHeight = pressureMap[nearPoints[3].X, nearPoints[3].Y];
-                    double aboveHeight = pressureMap[nearPoints[0].X, nearPoints[0].Y];
-                    double belowHeight = pressureMap[nearPoints[1].X, nearPoints[1].Y];
-                    double xDerivative = rightHeight - leftHeight;
-                    double yDerivative = aboveHeight - belowHeight;
-                    double rDerivative = Math.Sqrt(xDerivative * xDerivative + yDerivative * yDerivative);
-                    double aDerivative = Math.Atan2(yDerivative, xDerivative);
+                    var nearPoints = point[x, y].FindNeighborPoints();
+                    var leftHeight = pressureMap[nearPoints[2].X, nearPoints[2].Y];
+                    var rightHeight = pressureMap[nearPoints[3].X, nearPoints[3].Y];
+                    var aboveHeight = pressureMap[nearPoints[0].X, nearPoints[0].Y];
+                    var belowHeight = pressureMap[nearPoints[1].X, nearPoints[1].Y];
+                    var xDerivative = rightHeight - leftHeight;
+                    var yDerivative = aboveHeight - belowHeight;
+                    var rDerivative = Math.Sqrt(xDerivative * xDerivative + yDerivative * yDerivative);
+                    var aDerivative = Math.Atan2(yDerivative, xDerivative);
                     if (y < midPoint)
                     {
                         aDerivative += Math.PI * 0.2;
@@ -193,9 +195,9 @@ namespace Resource_Generator
         /// <returns>Rainfall map.</returns>
         private static double[,] RainFlow(double[,,] windMap, double[,] heightMap)
         {
-            double[,] tempRainfallOne = new double[2 * rules.xHalfSize, rules.ySize];
-            double[,] tempRainfallTwo = new double[2 * rules.xHalfSize, rules.ySize];
-            double[,] output = new double[2 * rules.xHalfSize, rules.ySize];
+            var tempRainfallOne = new double[2 * rules.xHalfSize, rules.ySize];
+            var tempRainfallTwo = new double[2 * rules.xHalfSize, rules.ySize];
+            var output = new double[2 * rules.xHalfSize, rules.ySize];
             for (int x = 0; x < 2 * rules.xHalfSize; x++)
             {
                 for (int y = 0; y < rules.ySize; y++)
@@ -214,7 +216,7 @@ namespace Resource_Generator
                 {
                     for (int y = 0; y < rules.ySize; y++)
                     {
-                        SimplePoint[] nearPoints = point[x, y].FindNeighborPoints();
+                        var nearPoints = point[x, y].FindNeighborPoints();
                         for (int j = 0; j < 4; j++)
                         {
                             tempRainfallTwo[nearPoints[j].X, nearPoints[j].Y] = windMap[x, y, 0] * tempRainfallOne[x, y];
@@ -232,12 +234,12 @@ namespace Resource_Generator
         /// <summary>
         /// Calculates a base pressure given the ITC zone.
         /// </summary>
-        /// <param name="ITCZone">ITC zone to generate base pressure field with.</param>
-        /// <returns>Base pressure field.</returns>
+        /// <param name="rawPressure">Base pressure map to smooth.</param>
+        /// <returns>Smoothed pressure field.</returns>
         private static double[,] SmoothPressure(double[,] rawPressure)
         {
-            double[,] output = new double[2 * rules.xHalfSize, rules.ySize];
-            double[,] tempInput = rawPressure;
+            var output = new double[2 * rules.xHalfSize, rules.ySize];
+            var tempInput = rawPressure;
             for (int i = 0; i < 10; i++)
             {
                 for (int x = 0; x < 2 * rules.xHalfSize; x++)
@@ -245,7 +247,7 @@ namespace Resource_Generator
                     for (int y = 0; y < rules.ySize; y++)
                     {
                         output[x, y] = 0.6 * tempInput[x, y];
-                        SimplePoint[] nearPoints = point[x, y].FindNeighborPoints();
+                        var nearPoints = point[x, y].FindNeighborPoints();
                         for (int j = 0; j < 4; j++)
                         {
                             output[x, y] = 0.1 * tempInput[nearPoints[j].X, nearPoints[j].Y];
@@ -261,22 +263,22 @@ namespace Resource_Generator
         /// Generates rainfall map given a height map.
         /// </summary>
         /// <param name="heightMap">Height map to base rainfall off of.</param>
-        /// <param name="rules">Rules for how generation is to take place.</param>
+        /// <param name="inRules">Rules for how generation is to take place.</param>
         /// <returns>Rainfall map</returns>
         public static double[,,] Run(double[,] heightMap, RainfallMapRules inRules)
         {
             rules = inRules;
             ConstructData();
-            double[,,] output = new double[2 * rules.xHalfSize, rules.ySize, rules.numberSeasons];
+            var output = new double[2 * rules.xHalfSize, rules.ySize, rules.numberSeasons];
             Parallel.For(0, (rules.numberSeasons), (i) =>
             {
-                double yearEffect = Math.PI * (2 * (i / rules.numberSeasons) - 1);
-                double pitchEffect = Math.Sin(yearEffect) * rules.axisTilt;
-                int[] ITCZone = BaseITC(heightMap, pitchEffect);
-                double[,] pressureMap = BasePressure(ITCZone, heightMap, yearEffect);
+                var yearEffect = Math.PI * (2 * (i / rules.numberSeasons) - 1);
+                var pitchEffect = Math.Sin(yearEffect) * rules.axisTilt;
+                var ITCZone = BaseITC(heightMap, pitchEffect);
+                var pressureMap = BasePressure(ITCZone, heightMap, yearEffect);
                 pressureMap = SmoothPressure(pressureMap);
-                double[,,] windMap = PressureGradient(pressureMap);
-                double[,] smallRainMap = RainFlow(windMap, heightMap);
+                var windMap = PressureGradient(pressureMap);
+                var smallRainMap = RainFlow(windMap, heightMap);
                 for (int x = 0; x < 2 * rules.xHalfSize; x++)
                 {
                     for (int y = 0; y < rules.ySize; y++)

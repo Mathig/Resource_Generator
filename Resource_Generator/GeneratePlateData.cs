@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -58,12 +57,12 @@ namespace Resource_Generator
         /// <param name="plateIndex">Index of plate.</param>
         private static void CheckBorderPoints(Queue<OverlapPoint> pointQueue, IPoint iPoint, int plateIndex)
         {
-            SimplePoint[] newPoints = iPoint.FindNeighborPoints();
+            var newPoints = iPoint.FindNeighborPoints();
             foreach (SimplePoint newSimplePoint in newPoints)
             {
                 if (!pointActives[newSimplePoint.X, newSimplePoint.Y])
                 {
-                    OverlapPoint newPoint = new OverlapPoint(newSimplePoint, plateIndex);
+                    var newPoint = new OverlapPoint(newSimplePoint, plateIndex);
                     pointQueue.Enqueue(newPoint);
                 }
             }
@@ -76,7 +75,7 @@ namespace Resource_Generator
         /// <param name="pointStack">Stack to add appropriate points to stack.</param>
         private static void CheckNeighbor(SimplePoint iPoint, Stack<SimplePoint> pointStack)
         {
-            SimplePoint[] newPoints = iPoint.FindNeighborPoints();
+            var newPoints = iPoint.FindNeighborPoints();
             foreach (SimplePoint newPoint in newPoints)
             {
                 if (pointActives[newPoint.X, newPoint.Y])
@@ -93,7 +92,7 @@ namespace Resource_Generator
         /// <returns>Map array of plate point data.</returns>
         private static PlatePoint[,] CompileData()
         {
-            PlatePoint[,] output = new PlatePoint[2 * rules.xHalfSize, rules.ySize];
+            var output = new PlatePoint[2 * rules.xHalfSize, rules.ySize];
             Parallel.For(0, (rules.plateCount), (i) =>
             {
                 foreach (SimplePoint iPoint in platePoints[i])
@@ -107,6 +106,7 @@ namespace Resource_Generator
         /// <summary>
         /// Starts up and allocates data arrays.
         /// </summary>
+        /// <param name="inRules">Rules to use for constructing data.</param>
         private static void ConstructData(GenerateRules inRules)
         {
             rules = inRules;
@@ -131,12 +131,11 @@ namespace Resource_Generator
         /// <summary>
         /// Sorts all point magnitudes and returns the magnitude at the given index.
         /// </summary>
-        /// <param name="index">Index to return height value.</param>
         /// <returns>Height at given index.</returns>
         private static double CutoffMagnitude()
         {
-            double[] output = new double[2 * rules.xHalfSize * rules.ySize];
-            int k = 0;
+            var output = new double[2 * rules.xHalfSize * rules.ySize];
+            var k = 0;
             foreach (double pointMagnitude in pointMagnitudes)
             {
                 output[k++] = pointMagnitude;
@@ -166,12 +165,10 @@ namespace Resource_Generator
         /// <returns>True if still valid border point, otherwise false.</returns>
         private static bool DequeueBorderPoint(Queue<OverlapPoint> pointQueue, out OverlapPoint borderPoint)
         {
-            if (pointQueue.TryDequeue(out borderPoint))
+            borderPoint = pointQueue.Dequeue();
+            if (!pointActives[borderPoint.X, borderPoint.Y])
             {
-                if (!pointActives[borderPoint.X, borderPoint.Y])
-                {
-                    return true;
-                }
+                return true;
             }
             return false;
         }
@@ -183,12 +180,12 @@ namespace Resource_Generator
         /// <param name="radius">Radius of circle.</param>
         /// <param name="magnitude">Weight of point to be added.</param>
         /// <param name="radiusSquared">Square of the radius, for computational efficiency.</param>
-        private static void DistributeCircle(BasePoint centerPoint, double radius, double magnitude, double radiusSquared)
+        private static void DistributeCircle(in BasePoint centerPoint, double radius, double magnitude, double radiusSquared)
         {
             centerPoint.Range(radius, out int xMin, out int xMax, out int yMin, out int yMax);
             for (int xP = xMin; xP < xMax; xP++)
             {
-                int x = xP;
+                var x = xP;
                 if (x >= 2 * rules.xHalfSize)
                 {
                     x -= 2 * rules.xHalfSize;
@@ -211,7 +208,7 @@ namespace Resource_Generator
         /// <param name="points">List of points where the circles are centered.</param>
         private static void DistributeCircles(double radius, double magnitude, List<BasePoint> points)
         {
-            double radiusSquared = radius * radius;
+            var radiusSquared = radius * radius;
             Parallel.For(0, (points.Count), (i) =>
             {
                 DistributeCircle(points[i], radius, magnitude, radiusSquared);
@@ -223,7 +220,7 @@ namespace Resource_Generator
         /// </summary>
         private static void ExpandPlates()
         {
-            Queue<OverlapPoint> borderPoints = new Queue<OverlapPoint>();
+            var borderPoints = new Queue<OverlapPoint>();
             for (int i = 0; i < platePoints.Length; i++)
             {
                 FindPlateBorders(platePoints[i], borderPoints, i);
@@ -246,12 +243,12 @@ namespace Resource_Generator
         /// <param name="startingPoint">Starting point to check neighbors.</param>
         private static void FindContiguousPoints(SimplePoint startingPoint)
         {
-            Stack<SimplePoint> pointStack = new Stack<SimplePoint>();
+            var pointStack = new Stack<SimplePoint>();
             pointActives[startingPoint.X, startingPoint.Y] = false;
             pointStack.Push(startingPoint);
             while (pointStack.Count != 0)
             {
-                SimplePoint point = pointStack.Pop();
+                var point = pointStack.Pop();
                 temporaryPoints.Add(point);
                 CheckNeighbor(point, pointStack);
             }
@@ -325,10 +322,10 @@ namespace Resource_Generator
         /// </summary>
         private static void NoiseGenerator()
         {
-            Random rnd = new Random();
+            var rnd = new Random();
             for (int i = 0; i < rules.magnitude.Length; i++)
             {
-                List<BasePoint> circleList = new List<BasePoint>();
+                var circleList = new List<BasePoint>();
                 foreach (BasePoint iPoint in pointMap)
                 {
                     if (iPoint.TestMomentum(rnd.NextDouble(), rules.pointConcentration[i]))
@@ -411,7 +408,7 @@ namespace Resource_Generator
             NoiseFilter(CutoffMagnitude());
             PlateMaking();
             ExpandPlates();
-            PlatePoint[,] output = CompileData();
+            var output = CompileData();
             DeconstructData();
             return output;
         }

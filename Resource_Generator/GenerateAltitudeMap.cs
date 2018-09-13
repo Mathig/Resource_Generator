@@ -21,6 +21,7 @@ namespace Resource_Generator
         /// Finds the height given an input point.
         /// </summary>
         /// <param name="iPoint">Point to find height for.</param>
+        /// <param name="randomNumber">Random value to determine height.</param>
         /// <returns>Height of point.</returns>
         private static double GetHeight(PlatePoint iPoint, double randomNumber)
         {
@@ -50,7 +51,7 @@ namespace Resource_Generator
         {
             rules = inRules;
             heightMap = new double[pointMap.GetLength(0), pointMap.GetLength(1)];
-            Random randomNumber = new Random();
+            var randomNumber = new Random();
             for (int x = 0; x < pointMap.GetLength(0); x++)
             {
                 for (int y = 0; y < pointMap.GetLength(1); y++)

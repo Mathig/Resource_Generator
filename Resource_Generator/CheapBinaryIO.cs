@@ -16,7 +16,7 @@ namespace Resource_Generator
         /// <returns>Compressed data.</returns>
         private static bool[,] CompressToBinary(int[,] inData)
         {
-            bool[,] output = new bool[inData.GetLength(0), inData.GetLength(1)];
+            var output = new bool[inData.GetLength(0), inData.GetLength(1)];
             Parallel.For(0, inData.GetLength(0), (x) =>
             {
                 for (int y = 0; y < inData.GetLength(1); y++)
@@ -37,7 +37,7 @@ namespace Resource_Generator
         /// <returns>Compressed data.</returns>
         private static byte[,] CompressToByte(int[,] inData)
         {
-            byte[,] output = new byte[inData.GetLength(0), inData.GetLength(1)];
+            var output = new byte[inData.GetLength(0), inData.GetLength(1)];
             Parallel.For(0, inData.GetLength(0), (x) =>
             {
                 for (int y = 0; y < inData.GetLength(1); y++)
@@ -55,7 +55,7 @@ namespace Resource_Generator
         /// <returns>Compressed data.</returns>
         private static ushort[,] CompressToUshort(int[,] inData)
         {
-            ushort[,] output = new ushort[inData.GetLength(0), inData.GetLength(1)];
+            var output = new ushort[inData.GetLength(0), inData.GetLength(1)];
             Parallel.For(0, inData.GetLength(0), (x) =>
             {
                 for (int y = 0; y < inData.GetLength(1); y++)
@@ -77,7 +77,7 @@ namespace Resource_Generator
         /// <exception cref="FileNotFoundException">File could not be found.</exception>
         private static byte[,] ReadByte(string fileName, int xSize, int ySize)
         {
-            byte[,] data = new byte[xSize, ySize];
+            var data = new byte[xSize, ySize];
             try
             {
                 using (BinaryReader reader = new BinaryReader(File.Open(fileName, FileMode.Open)))
@@ -113,7 +113,7 @@ namespace Resource_Generator
         /// <exception cref="FileNotFoundException">File could not be found.</exception>
         private static int[,] ReadInt(string fileName, int xSize, int ySize)
         {
-            int[,] data = new int[xSize, ySize];
+            var data = new int[xSize, ySize];
             try
             {
                 using (BinaryReader reader = new BinaryReader(File.Open(fileName, FileMode.Open)))
@@ -149,7 +149,7 @@ namespace Resource_Generator
         /// <exception cref="FileNotFoundException">File could not be found.</exception>
         private static ushort[,] ReadUshort(string fileName, int xSize, int ySize)
         {
-            ushort[,] data = new ushort[xSize, ySize];
+            var data = new ushort[xSize, ySize];
             try
             {
                 using (BinaryReader reader = new BinaryReader(File.Open(fileName, FileMode.Open)))
@@ -203,7 +203,7 @@ namespace Resource_Generator
         /// <returns>Uncompressed data.</returns>
         private static int[,] UncompressBinary(bool[,] inData)
         {
-            int[,] output = new int[inData.GetLength(0), inData.GetLength(1)];
+            var output = new int[inData.GetLength(0), inData.GetLength(1)];
             Parallel.For(0, inData.GetLength(0), (x) =>
             {
                 for (int y = 0; y < inData.GetLength(1); y++)
@@ -224,7 +224,7 @@ namespace Resource_Generator
         /// <returns>Uncompressed data.</returns>
         private static int[,] UncompressByte(byte[,] inData)
         {
-            int[,] output = new int[inData.GetLength(0), inData.GetLength(1)];
+            var output = new int[inData.GetLength(0), inData.GetLength(1)];
             Parallel.For(0, inData.GetLength(0), (x) =>
             {
                 for (int y = 0; y < inData.GetLength(1); y++)
@@ -242,7 +242,7 @@ namespace Resource_Generator
         /// <returns>Uncompressed data.</returns>
         private static int[,] UncompressUshort(ushort[,] inData)
         {
-            int[,] output = new int[inData.GetLength(0), inData.GetLength(1)];
+            var output = new int[inData.GetLength(0), inData.GetLength(1)];
             Parallel.For(0, inData.GetLength(0), (x) =>
             {
                 for (int y = 0; y < inData.GetLength(1); y++)
@@ -306,30 +306,31 @@ namespace Resource_Generator
         /// </summary>
         /// <param name="filePath">File to read from.</param>
         /// <param name="maxValue">Max value of the data.</param>
+        /// <param name="xSize">X size of map.</param>
+        /// <param name="ySize">Y size of map.</param>
         /// <returns>Data to retrieve as an array of integers.</returns>
         /// <exception cref="InvalidDataException">File is not formatted correctly.</exception>
         /// <exception cref="FileNotFoundException">File could not be found.</exception>
         public static int[,] Read(string filePath, int maxValue, int xSize, int ySize)
         {
-            int bitSize = Simplify(maxValue);
+            var bitSize = Simplify(maxValue);
             switch (bitSize)
             {
                 case 1:
-                    bool[,] rawBoolData = ReadBinary(filePath, xSize, ySize);
+                    var rawBoolData = ReadBinary(filePath, xSize, ySize);
                     return UncompressBinary(rawBoolData);
 
                 case 8:
-                    byte[,] rawByteData = ReadByte(filePath, xSize, ySize);
+                    var rawByteData = ReadByte(filePath, xSize, ySize);
                     return UncompressByte(rawByteData);
 
                 case 16:
-                    ushort[,] rawUshortData = ReadUshort(filePath, xSize, ySize);
+                    var rawUshortData = ReadUshort(filePath, xSize, ySize);
                     return UncompressUshort(rawUshortData);
 
-                case 32:
+                default:
                     return ReadInt(filePath, xSize, ySize);
             }
-            return null;
         }
 
         /// <summary>
@@ -343,7 +344,7 @@ namespace Resource_Generator
         /// <exception cref="FileNotFoundException">File could not be found.</exception>
         public static bool[,] ReadBinary(string fileName, int xSize, int ySize)
         {
-            bool[,] data = new bool[xSize, ySize];
+            var data = new bool[xSize, ySize];
             try
             {
                 using (BinaryReader reader = new BinaryReader(File.Open(fileName, FileMode.Open)))
@@ -376,7 +377,7 @@ namespace Resource_Generator
         /// <param name="maxValue">Max value of data.</param>
         public static void Write(string filePath, int[,] data, int maxValue)
         {
-            int bitSize = Simplify(maxValue);
+            var bitSize = Simplify(maxValue);
             switch (bitSize)
             {
                 case 1:
@@ -391,7 +392,7 @@ namespace Resource_Generator
                     WriteUshort(filePath, CompressToUshort(data));
                     break;
 
-                case 32:
+                default:
                     WriteInt(filePath, data);
                     break;
             }

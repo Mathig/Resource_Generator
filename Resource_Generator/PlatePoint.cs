@@ -130,11 +130,11 @@ namespace Resource_Generator
         /// <param name="rightPoint">Right point to check to.</param>
         /// <param name="centerPoint">Center point to avoid.</param>
         /// <returns>List of points in range excluding the center point.</returns>
-        private static List<SimplePoint> FindAllPoints(BasePoint leftPoint, BasePoint rightPoint, SimplePoint centerPoint)
+        private static List<SimplePoint> FindAllPoints(in BasePoint leftPoint, in BasePoint rightPoint, SimplePoint centerPoint)
         {
-            List<SimplePoint> listPoints = new List<SimplePoint>();
-            List<int> validXs = new List<int>();
-            SimplePoint nextPoint = new SimplePoint(leftPoint.X, leftPoint.Y);
+            var listPoints = new List<SimplePoint>();
+            var validXs = new List<int>();
+            var nextPoint = new SimplePoint(leftPoint.X, leftPoint.Y);
             while (nextPoint.X != rightPoint.X)
             {
                 nextPoint.FindLeftRightPoints(out _, out nextPoint);
@@ -144,7 +144,7 @@ namespace Resource_Generator
             {
                 return listPoints;
             }
-            int newY = centerPoint.Y;
+            var newY = centerPoint.Y;
             for (int x = 0; x < validXs.Count - 1; x++)
             {
                 if (validXs[x] != centerPoint.X)
@@ -158,11 +158,15 @@ namespace Resource_Generator
         /// <summary>
         /// Resolves multiple points of the same plate.
         /// </summary>
-        /// <param name="points">Other points to resolve.</param>
+        /// <param name="inPoints">List of plate points to resolve.</param>
+        /// <param name="newPlate">Which plate point will be part of.</param>
+        /// <param name="xCoord">Pre-truncated position of point.</param>
+        /// <param name="yCoord">Pre-truncated position of point.</param>
+        /// <param name="newPosition">New position of point.</param>
         public static PlatePoint ResolveSamePlateNeighbors(List<PlatePoint> inPoints, double xCoord, double yCoord, SimplePoint newPosition, int newPlate)
         {
-            bool isPureOceanic = true;
-            List<PlatePoint> continentalList = new List<PlatePoint>();
+            var isPureOceanic = true;
+            var continentalList = new List<PlatePoint>();
             foreach (PlatePoint iPoint in inPoints)
             {
                 if (iPoint.IsContinental)
@@ -175,12 +179,12 @@ namespace Resource_Generator
             double xBirth = 0;
             double yBirth = 0;
             double birthDate = 0;
-            double[] historyVars = new double[4];
+            var historyVars = new double[4];
             if (isPureOceanic)
             {
                 foreach (PlatePoint iPoint in inPoints)
                 {
-                    double weight = iPoint.point.Distance(xCoord, yCoord);
+                    var weight = iPoint.point.Distance(xCoord, yCoord);
                     weightTotal += 1 / weight;
                     xBirth += iPoint._birthPlace.X / weight;
                     yBirth += iPoint._birthPlace.Y / weight;
@@ -195,7 +199,7 @@ namespace Resource_Generator
             {
                 foreach (PlatePoint iPoint in continentalList)
                 {
-                    double weight = iPoint.point.Distance(xCoord, yCoord);
+                    var weight = iPoint.point.Distance(xCoord, yCoord);
                     weightTotal += 1 / weight;
                     xBirth += iPoint._birthPlace.X / weight;
                     yBirth += iPoint._birthPlace.Y / weight;
@@ -212,9 +216,9 @@ namespace Resource_Generator
             historyVars[1] = historyVars[1] / weightTotal;
             historyVars[2] = historyVars[2] / weightTotal;
             historyVars[3] = historyVars[3] / weightTotal;
-            SimplePoint newBirthPoint = new SimplePoint((int)Math.Round(xBirth), (int)Math.Round(yBirth));
-            BoundaryHistory newHistory = new BoundaryHistory((int)Math.Round(historyVars[0]), (int)Math.Round(historyVars[1]), (int)Math.Round(historyVars[2]), (int)Math.Round(historyVars[3]));
-            int newBirthDate = (int)Math.Round(birthDate / weightTotal);
+            var newBirthPoint = new SimplePoint((int)Math.Round(xBirth), (int)Math.Round(yBirth));
+            var newHistory = new BoundaryHistory((int)Math.Round(historyVars[0]), (int)Math.Round(historyVars[1]), (int)Math.Round(historyVars[2]), (int)Math.Round(historyVars[3]));
+            var newBirthDate = (int)Math.Round(birthDate / weightTotal);
             return new PlatePoint(newPosition, newBirthPoint, newBirthDate, newPlate, newHistory, !isPureOceanic);
         }
 
@@ -243,7 +247,7 @@ namespace Resource_Generator
         /// <summary>
         /// Calculates distance between this point and the input point. Uses approximation for cosine for small angles.
         /// </summary>
-        /// <param name="iPoint">Second point used for calculating distance.</param>
+        /// <param name="inPlatePoint">Second point used for calculating distance.</param>
         /// <returns>Distance between the two points.</returns>
         public double Distance(PlatePoint inPlatePoint)
         {
@@ -290,9 +294,9 @@ namespace Resource_Generator
         /// <param name="points">Other points to resolve.</param>
         public void ResolveSamePlateOverlap(List<PlatePoint> points)
         {
-            int count = 0;
-            int xBirth = 0;
-            int yBirth = 0;
+            var count = 0;
+            var xBirth = 0;
+            var yBirth = 0;
             if (IsContinental)
             {
                 count++;
@@ -329,17 +333,18 @@ namespace Resource_Generator
         /// </summary>
         /// <param name="angle">Three dimensional angle for rotation, given in radians.</param>
         /// <param name="bonusPoints">Additional points to add.</param>
+        /// <param name="ySize">Y size of map.</param>
         /// <returns>True if there are bonus points, otherwise false.</returns>
         public bool Transform(double[] angle, out List<SimplePoint> bonusPoints, int ySize)
         {
             bonusPoints = new List<SimplePoint>();
-            SimplePoint tempPoint = point.Transform(angle);
+            var tempPoint = point.Transform(angle);
             if (tempPoint.Y == Y)
             {
                 point = new BasePoint(tempPoint);
                 return false;
             }
-            int yVar = Math.Abs(ySize / 2 - tempPoint.Y) - Math.Abs(ySize / 2 - Y);
+            var yVar = Math.Abs(ySize / 2 - tempPoint.Y) - Math.Abs(ySize / 2 - Y);
             if (yVar < 0)
             {
                 point = new BasePoint(tempPoint);

@@ -67,6 +67,8 @@ namespace Resource_Generator
         /// <summary>
         /// Tries to create a directory in the default location.
         /// </summary>
+        /// <param name="coreDirectory">Location to store directory location.</param>
+        /// <param name="directory">Location of directory.</param>
         /// <returns>True if successful, false otherwise.</returns>
         private static bool TryToCreateDefaultDirectory(string coreDirectory, out string directory)
         {
@@ -127,7 +129,7 @@ namespace Resource_Generator
         /// <param name="directory">Directory to use for creating new files.</param>
         public static void GenerateDefaultFiles(string directory)
         {
-            AltitudeMapRules altitudeMapRules = new AltitudeMapRules
+            var altitudeMapRules = new AltitudeMapRules
             {
                 currentTime = 0,
                 maxBuildup = 0,
@@ -137,11 +139,11 @@ namespace Resource_Generator
             };
             using (StreamWriter file = new StreamWriter(directory + "\\GenerateAltitudeRules.xml", false))
             {
-                XmlSerializer serializer = new XmlSerializer(typeof(AltitudeMapRules));
+                var serializer = new XmlSerializer(typeof(AltitudeMapRules));
                 serializer.Serialize(file, altitudeMapRules);
             }
 
-            ErosionMapRules erosionMapRules = new ErosionMapRules
+            var erosionMapRules = new ErosionMapRules
             {
                 currentTime = 0,
                 maxBuildup = 0,
@@ -153,11 +155,11 @@ namespace Resource_Generator
             };
             using (StreamWriter file = new StreamWriter(directory + "\\GenerateErosionRules.xml", false))
             {
-                XmlSerializer serializer = new XmlSerializer(typeof(ErosionMapRules));
+                var serializer = new XmlSerializer(typeof(ErosionMapRules));
                 serializer.Serialize(file, erosionMapRules);
             }
 
-            GenerateRules generateRules = new GenerateRules
+            var generateRules = new GenerateRules
             {
                 currentTime = 0,
                 maxBuildup = 0,
@@ -177,11 +179,11 @@ namespace Resource_Generator
             }
             using (StreamWriter file = new StreamWriter(directory + "\\GenerationRules.xml", false))
             {
-                XmlSerializer serializer = new XmlSerializer(typeof(GenerateRules));
+                var serializer = new XmlSerializer(typeof(GenerateRules));
                 serializer.Serialize(file, generateRules);
             }
 
-            MoveRules moveRules = new MoveRules
+            var moveRules = new MoveRules
             {
                 currentTime = 0,
                 maxBuildup = 0,
@@ -194,10 +196,10 @@ namespace Resource_Generator
             };
             using (StreamWriter file = new StreamWriter(directory + "\\MoveRules.xml", false))
             {
-                XmlSerializer serializer = new XmlSerializer(typeof(MoveRules));
+                var serializer = new XmlSerializer(typeof(MoveRules));
                 serializer.Serialize(file, moveRules);
             }
-            RainfallMapRules rainfallMapRules = new RainfallMapRules
+            var rainfallMapRules = new RainfallMapRules
             {
                 currentTime = 0,
                 maxBuildup = 0,
@@ -212,10 +214,10 @@ namespace Resource_Generator
             };
             using (StreamWriter file = new StreamWriter(directory + "\\PlateData.xml", false))
             {
-                XmlSerializer serializer = new XmlSerializer(typeof(RainfallMapRules));
+                var serializer = new XmlSerializer(typeof(RainfallMapRules));
                 serializer.Serialize(file, rainfallMapRules);
             }
-            PlateData plateData = new PlateData
+            var plateData = new PlateData
             {
                 Direction = new double[10][],
                 Speed = new double[10]
@@ -223,7 +225,7 @@ namespace Resource_Generator
             for (int i = 0; i < 10; i++)
             {
                 plateData.Direction[i] = new double[2];
-                double angleOne = i * Math.PI / 4.5;
+                var angleOne = i * Math.PI / 4.5;
                 angleOne = Math.Round(angleOne, 3);
                 plateData.Speed[i] = 0.02;
                 plateData.Direction[i][0] = angleOne;
@@ -252,7 +254,7 @@ namespace Resource_Generator
         public static bool Setup(out string directory)
         {
             directory = "";
-            string coreDirectory = "";
+            var coreDirectory = "";
             try
             {
                 CoreDirectory(out coreDirectory);

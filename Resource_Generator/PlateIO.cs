@@ -21,7 +21,7 @@ namespace Resource_Generator
         {
             try
             {
-                XmlSerializer serializer = new XmlSerializer(typeof(PlateData));
+                var serializer = new XmlSerializer(typeof(PlateData));
                 PlateData plateData;
                 using (FileStream fileStream = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read))
                 {

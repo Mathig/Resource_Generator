@@ -5,7 +5,7 @@ namespace Resource_Generator
     /// <summary>
     /// Contains SimplePoint plus extra variables for calculating distances, sizes, and rotations.
     /// </summary>
-    public struct BasePoint : IComparable, IPoint
+    public readonly struct BasePoint : IComparable, IPoint
     {
         /// <summary>
         /// Angular height of point in radians.
@@ -139,11 +139,11 @@ namespace Resource_Generator
         /// <returns>Point rotated about 3 axis.</returns>
         private static double[] CartesianRotation(double[] pointIn, double[] angle)
         {
-            double cosAngleX = Math.Cos(angle[0]);
-            double sinAngleX = Math.Sin(angle[0]);
-            double cosAngleY = Math.Cos(angle[1]);
-            double sinAngleY = Math.Sin(angle[1]);
-            double[] pointOut = pointIn;//x y z
+            var cosAngleX = Math.Cos(angle[0]);
+            var sinAngleX = Math.Sin(angle[0]);
+            var cosAngleY = Math.Cos(angle[1]);
+            var sinAngleY = Math.Sin(angle[1]);
+            var pointOut = pointIn;//x y z
             pointOut = new double[] { pointOut[1], pointOut[2], pointOut[0] };//y z x
             pointOut = AxisRotation(pointOut[0], pointOut[1], pointOut[2], cosAngleX, sinAngleX);//Rotate about x
             pointOut = new double[] { pointOut[1], pointOut[2], pointOut[0] };//z x y
@@ -168,7 +168,7 @@ namespace Resource_Generator
         /// <returns>Theta and phi of rotated angle. Theta (0,2Pi], Phi (-Pi/2,Pi/2].</returns>
         private static double[] SphericalRotation(double thetaIn, double cosPhiIn, double sinPhiIn, double[] angle)
         {
-            double[] pointCartesian = new double[3];
+            var pointCartesian = new double[3];
 
             pointCartesian[0] = Math.Cos(thetaIn) * cosPhiIn;
             pointCartesian[1] = Math.Sin(thetaIn) * cosPhiIn;
@@ -176,7 +176,7 @@ namespace Resource_Generator
 
             pointCartesian = CartesianRotation(pointCartesian, angle);
 
-            double[] pointSpherical = new double[2];
+            var pointSpherical = new double[2];
 
             pointSpherical[0] = (Math.Atan2(-1 * pointCartesian[1], -1 * pointCartesian[0]) + Math.PI);
             pointSpherical[1] = Math.Asin(pointCartesian[2]);
@@ -186,7 +186,7 @@ namespace Resource_Generator
         /// <summary>
         /// Sets static variables for Base Point and Simple Point.
         /// </summary>
-        /// <param name="inXSize">Will become <see cref="_halfMapXSize"/>.</param>
+        /// <param name="inHalfXSize">Will become <see cref="_halfMapXSize"/>.</param>
         /// <param name="inYSize">Will become <see cref="_mapYSize"/>.</param>
         public static void MapSetup(int inHalfXSize, int inYSize)
         {
@@ -225,15 +225,17 @@ namespace Resource_Generator
         /// </summary>
         /// <param name="iPoint">Second point used for calculating distance.</param>
         /// <returns>Distance between the two points.</returns>
-        public double Distance(BasePoint iPoint)
+        public double Distance(in BasePoint iPoint)
         {
-            int xDif = Math.Abs(iPoint.X - X);
+            var xDif = Math.Abs(iPoint._position.X - _position.X);
             if (xDif > _halfMapXSize)
             {
                 xDif = 2 * _halfMapXSize - xDif;
             }
             double cosDif;
+#pragma warning disable CC0014 // Use ternary operator
             if (xDif < _halfMapXSize / 6)
+#pragma warning restore CC0014 // Use ternary operator
             {
                 cosDif = 1 - (0.5 * xDif * xDif * _dTheta * _dTheta);
             }
@@ -247,16 +249,20 @@ namespace Resource_Generator
         /// <summary>
         /// Calculates distance between this point and the input coordinates. Uses approximation for cosine for small angles.
         /// </summary>
+        /// <param name="xCoord">X coordinate of input point.</param>
+        /// <param name="yCoord">Y coordinate of input point.</param>
         /// <returns>Distance between the two points.</returns>
         public double Distance(double xCoord, double yCoord)
         {
-            double xDif = Math.Abs(xCoord - X);
+            var xDif = Math.Abs(xCoord - X);
             if (xDif > _halfMapXSize)
             {
                 xDif = 2 * _halfMapXSize - xDif;
             }
             double cosDif;
+#pragma warning disable CC0014 // Use ternary operator
             if (xDif < _halfMapXSize / 6)
+#pragma warning restore CC0014 // Use ternary operator
             {
                 cosDif = 1 - (0.5 * xDif * xDif * _dTheta * _dTheta);
             }
@@ -264,8 +270,8 @@ namespace Resource_Generator
             {
                 cosDif = Math.Cos(xDif * _dTheta);
             }
-            double otherCosPhi = Math.Cos((yCoord * _dPhi) + _phiShift);
-            double otherSinPhi = Math.Sin((yCoord * _dPhi) + _phiShift);
+            var otherCosPhi = Math.Cos((yCoord * _dPhi) + _phiShift);
+            var otherSinPhi = Math.Sin((yCoord * _dPhi) + _phiShift);
 
             return Math.Abs(2 * (1 - _sinPhi * otherSinPhi - _cosPhi * otherCosPhi * cosDif));
         }
@@ -293,12 +299,14 @@ namespace Resource_Generator
         /// Calculates new position of point for a given rotation.
         /// </summary>
         /// <param name="angle">Three dimensional angle for rotation, given in radians.</param>
+        /// <param name="xCoord">X coordinate of new position.</param>
+        /// <param name="yCoord">Y coordinate of new position.</param>
         /// <returns>New position given as a grid of x and y coordinates.</returns>
         public void GridTransform(double[] angle, out double xCoord, out double yCoord)
         {
-            int t1 = X;
-            int t2 = Y;
-            double[] doubleOutput = SphericalRotation(_theta, _cosPhi, _sinPhi, angle);
+            var t1 = X;
+            var t2 = Y;
+            var doubleOutput = SphericalRotation(_theta, _cosPhi, _sinPhi, angle);
 
             xCoord = doubleOutput[0] / _dTheta;
             yCoord = (doubleOutput[1] - _phiShift) / _dPhi;
@@ -315,17 +323,17 @@ namespace Resource_Generator
         /// <param name="yMax">Maximum Y boundary.</param>
         public void Range(double range, out int xMin, out int xMax, out int yMin, out int yMax)
         {
-            double zMin = ((_sinPhi - range) + 1) / 2;
+            var zMin = ((_sinPhi - range) + 1) / 2;
             if (zMin < 0)
             {
                 zMin = 0;
             }
-            double zMax = ((_sinPhi + range) + 1) / 2;
+            var zMax = ((_sinPhi + range) + 1) / 2;
             if (zMax > 1)
             {
                 zMax = 1;
             }
-            double rDif = range / _cosPhi;
+            var rDif = range / _cosPhi;
             if (rDif > 1)
             {
                 rDif = 1;
@@ -365,12 +373,12 @@ namespace Resource_Generator
         {
             GridTransform(angle, out double xDCoord, out double yDCoord);
 
-            int xCoord = (int)(Math.Round(xDCoord));
+            var xCoord = (int)(Math.Round(xDCoord));
             if (xCoord == 2 * _halfMapXSize)
             {
                 xCoord = 0;
             }
-            int yCoord = (int)(Math.Round(yDCoord));
+            var yCoord = (int)(Math.Round(yDCoord));
             if (yCoord == _mapYSize)
             {
                 yCoord = 0;

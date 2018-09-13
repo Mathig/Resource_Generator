@@ -18,7 +18,6 @@ namespace Resource_Generator
         /// <summary>
         /// Checks the rules to confirm they are valid.
         /// </summary>
-        /// <param name="rules">Rules to check.</param>
         /// <exception cref="InvalidDataException">Some data values are lower than required or missing.</exception>
         public void CheckRules()
         {

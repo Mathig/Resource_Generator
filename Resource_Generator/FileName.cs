@@ -5,7 +5,7 @@ namespace Resource_Generator
     /// <summary>
     /// Struct for handling file names.
     /// </summary>
-    internal struct FileName
+    internal readonly struct FileName
     {
         /// <summary>
         /// Name of file.
@@ -40,7 +40,6 @@ namespace Resource_Generator
         /// <summary>
         /// Tests if the string fulfills strict requirements for a file name.
         /// </summary>
-        /// <param name="inString">String to test.</param>
         /// <returns>True if valid, false otherwise.</returns>
         /// <exception cref="FormatException">Yields exception if the file name is invalid.</exception>
         public void CheckValidity()

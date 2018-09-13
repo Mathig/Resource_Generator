@@ -5,7 +5,7 @@ namespace Resource_Generator
     /// <summary>
     /// A simple point structure for X and Y (int) coordinates. MapSize should be called before use.
     /// </summary>
-    public struct SimplePoint : IComparable, IPoint
+    public readonly struct SimplePoint : IComparable, IPoint
     {
         /// <summary>
         /// Half the number of points per width of map.
@@ -18,14 +18,14 @@ namespace Resource_Generator
         private static int _mapYSize;
 
         /// <summary>
-        /// Internal X value of point, for array index.
+        /// X value of point, for array index.
         /// </summary>
-        private readonly int _x;
+        public int X { get; }
 
         /// <summary>
-        /// Internal Y value of point, for array index.
+        /// Y value of point, for array index.
         /// </summary>
-        private readonly int _y;
+        public int Y { get; }
 
         /// <summary>
         /// Constructor for X and Y coordinates.
@@ -34,36 +34,14 @@ namespace Resource_Generator
         /// <param name="yIn">Y Coordinate of point, see <see cref="Yi"/></param>
         public SimplePoint(int xIn, int yIn)
         {
-            _x = xIn;
-            _y = yIn;
-        }
-
-        /// <summary>
-        /// Opens <see cref="_x"/> to access through X.
-        /// </summary>
-        public int X
-        {
-            get
-            {
-                return _x;
-            }
-        }
-
-        /// <summary>
-        /// Opens <see cref="_y"/> to access through Y.
-        /// </summary>
-        public int Y
-        {
-            get
-            {
-                return _y;
-            }
+            X = xIn;
+            Y = yIn;
         }
 
         /// <summary>
         /// Sets the map size for the class.
         /// </summary>
-        /// <param name="inXSize">Will become <see cref="_halfMapXSize"/>.</param>
+        /// <param name="inHalfXSize">Will become <see cref="_halfMapXSize"/>.</param>
         /// <param name="inYSize">Will become <see cref="_mapYSize"/>.</param>
         public static void MapSize(int inHalfXSize, int inYSize)
         {
@@ -85,19 +63,19 @@ namespace Resource_Generator
             }
             if (obj is SimplePoint otherPoint)
             {
-                if (_y > otherPoint._y)
+                if (Y > otherPoint.Y)
                 {
                     return 1;
                 }
-                if (_y < otherPoint._y)
+                if (Y < otherPoint.Y)
                 {
                     return -1;
                 }
-                if (_x > otherPoint._x)
+                if (X > otherPoint.X)
                 {
                     return 1;
                 }
-                if (_x < otherPoint._x)
+                if (X < otherPoint.X)
                 {
                     return -1;
                 }
@@ -114,7 +92,7 @@ namespace Resource_Generator
         /// <returns>Array of neighboring points.</returns>
         public SimplePoint[] FindNeighborPoints()
         {
-            SimplePoint[] output = new SimplePoint[4];
+            var output = new SimplePoint[4];
             this.FindAboveBelowPoints(out output[0], out output[1]);
             this.FindLeftRightPoints(out output[2], out output[3]);
             return output;
@@ -127,14 +105,7 @@ namespace Resource_Generator
         /// <returns>The x value for a point that wraps around the boundary conditions.</returns>
         private int PoleBoundaryXWrap()
         {
-            if (_x >= _halfMapXSize)
-            {
-                return (_x - _halfMapXSize);
-            }
-            else
-            {
-                return (_x + _halfMapXSize);
-            }
+            return X >= _halfMapXSize ? (X - _halfMapXSize) : (X + _halfMapXSize);
         }
 
         /// <summary>
@@ -144,20 +115,20 @@ namespace Resource_Generator
         /// <param name="belowPoint">The point below this point.</param>
         public void FindAboveBelowPoints(out SimplePoint abovePoint, out SimplePoint belowPoint)
         {
-            if (_y == 0)
+            if (Y == 0)
             {
-                abovePoint = new SimplePoint(PoleBoundaryXWrap(), _y);
-                belowPoint = new SimplePoint(_x, _y + 1);
+                abovePoint = new SimplePoint(PoleBoundaryXWrap(), Y);
+                belowPoint = new SimplePoint(X, Y + 1);
             }
-            else if (_y == _mapYSize - 1)
+            else if (Y == _mapYSize - 1)
             {
-                abovePoint = new SimplePoint(_x, _y - 1);
-                belowPoint = new SimplePoint(PoleBoundaryXWrap(), _y);
+                abovePoint = new SimplePoint(X, Y - 1);
+                belowPoint = new SimplePoint(PoleBoundaryXWrap(), Y);
             }
             else
             {
-                abovePoint = new SimplePoint(_x, _y - 1);
-                belowPoint = new SimplePoint(_x, _y + 1);
+                abovePoint = new SimplePoint(X, Y - 1);
+                belowPoint = new SimplePoint(X, Y + 1);
             }
         }
 
@@ -168,20 +139,20 @@ namespace Resource_Generator
         /// <param name="rightPoint">The point to the right of this point.</param>
         public void FindLeftRightPoints(out SimplePoint leftPoint, out SimplePoint rightPoint)
         {
-            if (_x == 0)
+            if (X == 0)
             {
-                leftPoint = new SimplePoint(2 * _halfMapXSize - 1, _y);
-                rightPoint = new SimplePoint(_x + 1, _y);
+                leftPoint = new SimplePoint(2 * _halfMapXSize - 1, Y);
+                rightPoint = new SimplePoint(X + 1, Y);
             }
-            else if (_x == 2 * _halfMapXSize - 1)
+            else if (X == 2 * _halfMapXSize - 1)
             {
-                leftPoint = new SimplePoint(_x - 1, _y);
-                rightPoint = new SimplePoint(0, _y);
+                leftPoint = new SimplePoint(X - 1, Y);
+                rightPoint = new SimplePoint(0, Y);
             }
             else
             {
-                leftPoint = new SimplePoint(_x - 1, _y);
-                rightPoint = new SimplePoint(_x + 1, _y);
+                leftPoint = new SimplePoint(X - 1, Y);
+                rightPoint = new SimplePoint(X + 1, Y);
             }
         }
     }

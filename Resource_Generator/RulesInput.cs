@@ -52,7 +52,7 @@ namespace Resource_Generator
             }
             return null;
         }
-        
+
         /// <summary>
         /// Loads rules for altitude map.
         /// </summary>
@@ -62,7 +62,7 @@ namespace Resource_Generator
         /// <exception cref="FileNotFoundException">File not found.</exception>
         private static AltitudeMapRules LoadAltitudeRules(string fileName)
         {
-            XmlSerializer serializer = new XmlSerializer(typeof(AltitudeMapRules));
+            var serializer = new XmlSerializer(typeof(AltitudeMapRules));
             AltitudeMapRules rules;
             using (FileStream fileStream = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read))
             {
@@ -81,7 +81,7 @@ namespace Resource_Generator
         /// <exception cref="FileNotFoundException">File not found.</exception>
         private static ErosionMapRules LoadErosionRules(string fileName)
         {
-            XmlSerializer serializer = new XmlSerializer(typeof(ErosionMapRules));
+            var serializer = new XmlSerializer(typeof(ErosionMapRules));
             ErosionMapRules rules;
             using (FileStream fileStream = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read))
             {
@@ -100,7 +100,7 @@ namespace Resource_Generator
         /// <exception cref="FileNotFoundException">File not found.</exception>
         private static GenerateRules LoadGenerateRules(string fileName)
         {
-            XmlSerializer serializer = new XmlSerializer(typeof(GenerateRules));
+            var serializer = new XmlSerializer(typeof(GenerateRules));
             GenerateRules rules;
             using (FileStream fileStream = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read))
             {
@@ -119,7 +119,7 @@ namespace Resource_Generator
         /// <exception cref="FileNotFoundException">File not found.</exception>
         private static MoveRules LoadMoveRules(string fileName)
         {
-            XmlSerializer serializer = new XmlSerializer(typeof(MoveRules));
+            var serializer = new XmlSerializer(typeof(MoveRules));
             MoveRules rules;
             using (FileStream fileStream = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read))
             {
@@ -138,7 +138,7 @@ namespace Resource_Generator
         /// <exception cref="FileNotFoundException">File not found.</exception>
         private static RainfallMapRules LoadRainfallRules(string fileName)
         {
-            XmlSerializer serializer = new XmlSerializer(typeof(RainfallMapRules));
+            var serializer = new XmlSerializer(typeof(RainfallMapRules));
             RainfallMapRules rules;
             using (FileStream fileStream = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read))
             {
