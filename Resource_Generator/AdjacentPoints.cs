@@ -90,7 +90,7 @@
         {
             return inPoint.Y == _mapYSize - 1
                 ? new KeyPoint(XWrap(inPoint.X), inPoint.Y)
-                : new KeyPoint(inPoint.X, inPoint.Y - 1);
+                : new KeyPoint(inPoint.X, inPoint.Y + 1);
         }
 
         /// <summary>

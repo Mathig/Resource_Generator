@@ -57,7 +57,7 @@ namespace Resource_Generator
         /// <param name="plateIndex">Index of plate.</param>
         private static void CheckBorderPoints(Queue<OverlapPoint> pointQueue, IPoint iPoint, int plateIndex)
         {
-            var newPoints = pointMap[iPoint.X,iPoint.Y].Near.Points;
+            var newPoints = pointMap[iPoint.X, iPoint.Y].Near.Points;
             foreach (KeyPoint newSimplePoint in newPoints)
             {
                 if (!pointActives[newSimplePoint.X, newSimplePoint.Y])
@@ -145,16 +145,12 @@ namespace Resource_Generator
         }
 
         /// <summary>
-        /// Deallocates data arrays.
+        /// Finally deallocate data.
         /// </summary>
         private static void DeconstructData()
         {
             rules = null;
-            pointMap = null;
-            pointMagnitudes = null;
-            pointActives = null;
             platePoints = null;
-            GC.Collect();
         }
 
         /// <summary>
@@ -177,12 +173,11 @@ namespace Resource_Generator
         /// Distributes a circle point about a given point.
         /// </summary>
         /// <param name="centerPoint">Center of circle.</param>
-        /// <param name="radius">Radius of circle.</param>
-        /// <param name="magnitude">Weight of point to be added.</param>
-        /// <param name="radiusSquared">Square of the radius, for computational efficiency.</param>
-        private static void DistributeCircle(in BasePoint centerPoint, double radius, double magnitude, double radiusSquared)
+        /// <param name="generationStat">Generation statistics to use.</param>
+        /// <param name="pointMagnitudes">Array of magnitudes to fill.</param>
+        private static void DistributeCircle(in BasePoint centerPoint, in GenerationStat generationStat, double[,] pointMagnitudes)
         {
-            centerPoint.Range(radius, out int xMin, out int xMax, out int yMin, out int yMax);
+            centerPoint.Range(generationStat.radius, out int xMin, out int xMax, out int yMin, out int yMax);
             for (int xP = xMin; xP < xMax; xP++)
             {
                 var x = xP;
@@ -192,26 +187,27 @@ namespace Resource_Generator
                 }
                 for (int y = yMin; y < yMax; y++)
                 {
-                    if (centerPoint.Distance(pointMap[x, y]) < radiusSquared)
+                    if (centerPoint.Distance(pointMap[x, y]) < generationStat.radiusSquared)
                     {
-                        pointMagnitudes[x, y] += magnitude;
+                        pointMagnitudes[x, y] += generationStat.magnitude;
                     }
                 }
             }
         }
 
+#pragma warning disable EPS05 // Use in-modifier for a readonly struct
+
         /// <summary>
         /// Increases the Height of all points within circles centered at the given list of points.
         /// </summary>
-        /// <param name="radius">Radius of circles.</param>
-        /// <param name="magnitude">Magnitude of height to be added per point per circle.</param>
         /// <param name="points">List of points where the circles are centered.</param>
-        private static void DistributeCircles(double radius, double magnitude, List<BasePoint> points)
+        /// <param name="generationStat">Generation statistics to use.</param>
+        private static void DistributeCircles(GenerationStat generationStat, List<BasePoint> points)
+#pragma warning restore EPS05 // Use in-modifier for a readonly struct
         {
-            var radiusSquared = radius * radius;
             Parallel.For(0, (points.Count), (i) =>
             {
-                DistributeCircle(points[i], radius, magnitude, radiusSquared);
+                DistributeCircle(points[i], generationStat, pointMagnitudes);
             });
         }
 
@@ -322,6 +318,7 @@ namespace Resource_Generator
         /// </summary>
         private static void NoiseGenerator()
         {
+            var pointMagnitudes = new double[2 * rules.xHalfSize, rules.ySize];
             var rnd = new Random();
             for (int i = 0; i < rules.magnitude.Length; i++)
             {
@@ -333,7 +330,8 @@ namespace Resource_Generator
                         circleList.Add(iPoint);
                     }
                 }
-                DistributeCircles(rules.radius[i], rules.magnitude[i], circleList);
+                var generationStat = new GenerationStat(rules.radius[i], rules.magnitude[i]);
+                DistributeCircles(generationStat, circleList);
             }
         }
 
@@ -384,6 +382,16 @@ namespace Resource_Generator
         }
 
         /// <summary>
+        /// Initially deallocate data.
+        /// </summary>
+        private static void PruneData()
+        {
+            pointMap = null;
+            pointMagnitudes = null;
+            pointActives = null;
+        }
+
+        /// <summary>
         /// Replaces target plate list with <see cref="temporaryPoints"/>.
         /// </summary>
         /// <param name="targetPlateList">Plate list to replace at.</param>
@@ -408,9 +416,43 @@ namespace Resource_Generator
             NoiseFilter(CutoffMagnitude());
             PlateMaking();
             ExpandPlates();
+            PruneData();
             var output = CompileData();
             DeconstructData();
             return output;
+        }
+
+        /// <summary>
+        /// Helper class for holding point generation stats.
+        /// </summary>
+        private readonly struct GenerationStat
+        {
+            /// <summary>
+            /// Weight of point to be added.
+            /// </summary>
+            public readonly double magnitude;
+
+            /// <summary>
+            /// Radius of circle.
+            /// </summary>
+            public readonly double radius;
+
+            /// <summary>
+            /// Square of radius, for computational efficiency.
+            /// </summary>
+            public readonly double radiusSquared;
+
+            /// <summary>
+            /// Constructor.
+            /// </summary>
+            /// <param name="inRadius">Radius to use.</param>
+            /// <param name="inMagnitude">Magnitude to use.</param>
+            public GenerationStat(double inRadius, double inMagnitude)
+            {
+                radius = inRadius;
+                magnitude = inMagnitude;
+                radiusSquared = radius * radius;
+            }
         }
     }
 }
