@@ -5,7 +5,7 @@ namespace Resource_Generator
     /// <summary>
     /// Contains SimplePoint plus extra variables for calculating distances, sizes, and rotations.
     /// </summary>
-    public readonly struct BasePoint : IComparable, IPoint
+    public readonly struct BasePoint : IPoint
     {
         /// <summary>
         /// Angular height of point in radians.
@@ -40,7 +40,12 @@ namespace Resource_Generator
         /// <summary>
         /// Location of point.
         /// </summary>
-        private readonly SimplePoint _position;
+        private readonly KeyPoint _position;
+
+        /// <summary>
+        /// Points near this point.
+        /// </summary>
+        public AdjacentPoints Near { get; }
 
         /// <summary>
         /// Angular position of point, ranges from 0 to 2 pi.
@@ -59,7 +64,8 @@ namespace Resource_Generator
         /// <param name="inY">Y coordinate for point.</param>
         public BasePoint(int inX, int inY)
         {
-            _position = new SimplePoint(inX, inY);
+            _position = new KeyPoint(inX, inY);
+            Near = new AdjacentPoints(_position);
             _theta = _position.X * _dTheta;
             _cosPhi = Math.Cos((_position.Y * _dPhi) + _phiShift);
             _sinPhi = Math.Sin((_position.Y * _dPhi) + _phiShift);
@@ -72,44 +78,34 @@ namespace Resource_Generator
         public BasePoint(BasePoint inPoint)
         {
             _position = inPoint._position;
-            _theta = _position.X * _dTheta;
-            _cosPhi = Math.Cos((_position.Y * _dPhi) + _phiShift);
-            _sinPhi = Math.Sin((_position.Y * _dPhi) + _phiShift);
+            Near = inPoint.Near;
+            _theta = inPoint._theta;
+            _cosPhi = inPoint._cosPhi;
+            _sinPhi = inPoint._sinPhi;
         }
 
         /// <summary>
         /// Constructor for the Base Point. Takes in a Simple Point structure.
         /// </summary>
         /// <param name="inPoint">Input Point.</param>
-        public BasePoint(SimplePoint inPoint)
+        public BasePoint(KeyPoint inPoint)
         {
             _position = inPoint;
+            Near = new AdjacentPoints(_position);
             _theta = _position.X * _dTheta;
             _cosPhi = Math.Cos((_position.Y * _dPhi) + _phiShift);
             _sinPhi = Math.Sin((_position.Y * _dPhi) + _phiShift);
         }
 
         /// <summary>
-        /// Opens <see cref="SimplePoint.X"/> to access through X.
+        /// Opens <see cref="KeyPoint.X"/> to access through X.
         /// </summary>
-        public int X
-        {
-            get
-            {
-                return _position.X;
-            }
-        }
+        public int X => _position.X;
 
         /// <summary>
-        /// Opens <see cref="SimplePoint.Y"/> to access through Y.
+        /// Opens <see cref="KeyPoint.Y"/> to access through Y.
         /// </summary>
-        public int Y
-        {
-            get
-            {
-                return _position.Y;
-            }
-        }
+        public int Y => _position.Y;
 
         /// <summary>
         /// Rotates a three dimensional point about z axis.
@@ -190,7 +186,7 @@ namespace Resource_Generator
         /// <param name="inYSize">Will become <see cref="_mapYSize"/>.</param>
         public static void MapSetup(int inHalfXSize, int inYSize)
         {
-            SimplePoint.MapSize(inHalfXSize, inYSize);
+            AdjacentPoints.MapSize(inHalfXSize, inYSize);
             _halfMapXSize = inHalfXSize;
             _mapYSize = inYSize;
             _dTheta = Math.PI / inHalfXSize;
@@ -277,25 +273,6 @@ namespace Resource_Generator
         }
 
         /// <summary>
-        /// Returns neighboring points in an array ordered as above, below, left, then right.
-        /// </summary>
-        /// <returns>Neighbor points.</returns>
-        public SimplePoint[] FindNeighborPoints()
-        {
-            return _position.FindNeighborPoints();
-        }
-
-        /// <summary>
-        /// Determines the points left and right of this point, including wrap-arounds.
-        /// </summary>
-        /// <param name="leftPoint">The point to the left of this point.</param>
-        /// <param name="rightPoint">The point to the right of this point.</param>
-        public void FindLeftRightPoints(out SimplePoint leftPoint, out SimplePoint rightPoint)
-        {
-            _position.FindLeftRightPoints(out leftPoint, out rightPoint);
-        }
-
-        /// <summary>
         /// Calculates new position of point for a given rotation.
         /// </summary>
         /// <param name="angle">Three dimensional angle for rotation, given in radians.</param>
@@ -369,7 +346,7 @@ namespace Resource_Generator
         /// </summary>
         /// <param name="angle">Three dimensional angle for rotation, given in radians.</param>
         /// <returns>New position given as a Simple Point.</returns>
-        public SimplePoint Transform(double[] angle)
+        public KeyPoint Transform(double[] angle)
         {
             GridTransform(angle, out double xDCoord, out double yDCoord);
 
@@ -383,7 +360,7 @@ namespace Resource_Generator
             {
                 yCoord = 0;
             }
-            return new SimplePoint(xCoord, yCoord);
+            return new KeyPoint(xCoord, yCoord);
         }
     }
 }

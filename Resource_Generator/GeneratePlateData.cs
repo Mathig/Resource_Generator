@@ -12,7 +12,7 @@ namespace Resource_Generator
         /// <summary>
         /// List of points associated with a particular "plate".
         /// </summary>
-        private static List<SimplePoint>[] platePoints;
+        private static List<KeyPoint>[] platePoints;
 
         /// <summary>
         /// List of active points, used for processing points.
@@ -37,7 +37,7 @@ namespace Resource_Generator
         /// <summary>
         /// List of points associated with a temporary "plate".
         /// </summary>
-        private static List<SimplePoint> temporaryPoints;
+        private static List<KeyPoint> temporaryPoints;
 
         /// <summary>
         /// Adds border point to point list.
@@ -46,7 +46,7 @@ namespace Resource_Generator
         private static void AddBorderPoint(OverlapPoint iPoint)
         {
             pointActives[iPoint.X, iPoint.Y] = true;
-            platePoints[iPoint.plateIndex[0]].Add(new SimplePoint(iPoint.X, iPoint.Y));
+            platePoints[iPoint.plateIndex[0]].Add(new KeyPoint(iPoint.X, iPoint.Y));
         }
 
         /// <summary>
@@ -57,8 +57,8 @@ namespace Resource_Generator
         /// <param name="plateIndex">Index of plate.</param>
         private static void CheckBorderPoints(Queue<OverlapPoint> pointQueue, IPoint iPoint, int plateIndex)
         {
-            var newPoints = iPoint.FindNeighborPoints();
-            foreach (SimplePoint newSimplePoint in newPoints)
+            var newPoints = pointMap[iPoint.X,iPoint.Y].Near.Points;
+            foreach (KeyPoint newSimplePoint in newPoints)
             {
                 if (!pointActives[newSimplePoint.X, newSimplePoint.Y])
                 {
@@ -73,10 +73,10 @@ namespace Resource_Generator
         /// </summary>
         /// <param name="iPoint">Point to check neighbors for.</param>
         /// <param name="pointStack">Stack to add appropriate points to stack.</param>
-        private static void CheckNeighbor(SimplePoint iPoint, Stack<SimplePoint> pointStack)
+        private static void CheckNeighbor(KeyPoint iPoint, Stack<KeyPoint> pointStack)
         {
-            var newPoints = iPoint.FindNeighborPoints();
-            foreach (SimplePoint newPoint in newPoints)
+            var newPoints = pointMap[iPoint.X, iPoint.Y].Near.Points;
+            foreach (KeyPoint newPoint in newPoints)
             {
                 if (pointActives[newPoint.X, newPoint.Y])
                 {
@@ -95,7 +95,7 @@ namespace Resource_Generator
             var output = new PlatePoint[2 * rules.xHalfSize, rules.ySize];
             Parallel.For(0, (rules.plateCount), (i) =>
             {
-                foreach (SimplePoint iPoint in platePoints[i])
+                foreach (KeyPoint iPoint in platePoints[i])
                 {
                     output[iPoint.X, iPoint.Y] = new PlatePoint(iPoint, i, rules.currentTime);
                 }
@@ -114,10 +114,10 @@ namespace Resource_Generator
             pointMap = new BasePoint[2 * rules.xHalfSize, rules.ySize];
             pointMagnitudes = new double[2 * rules.xHalfSize, rules.ySize];
             pointActives = new bool[2 * rules.xHalfSize, rules.ySize];
-            platePoints = new List<SimplePoint>[rules.plateCount];
+            platePoints = new List<KeyPoint>[rules.plateCount];
             for (int i = 0; i < rules.plateCount; i++)
             {
-                platePoints[i] = new List<SimplePoint>();
+                platePoints[i] = new List<KeyPoint>();
             }
             Parallel.For(0, (2 * rules.xHalfSize), (x) =>
             {
@@ -241,9 +241,9 @@ namespace Resource_Generator
         /// setting the <see cref="pointActives"/> to false in the process.
         /// </summary>
         /// <param name="startingPoint">Starting point to check neighbors.</param>
-        private static void FindContiguousPoints(SimplePoint startingPoint)
+        private static void FindContiguousPoints(KeyPoint startingPoint)
         {
-            var pointStack = new Stack<SimplePoint>();
+            var pointStack = new Stack<KeyPoint>();
             pointActives[startingPoint.X, startingPoint.Y] = false;
             pointStack.Push(startingPoint);
             while (pointStack.Count != 0)
@@ -260,7 +260,7 @@ namespace Resource_Generator
         /// <param name="iPlatePoints">List of plate points.</param>
         /// <param name="pointQueue">Plate Point queue to add to.</param>
         /// <param name="plateIndex">Which plate we are searching.</param>
-        private static void FindPlateBorders(List<SimplePoint> iPlatePoints, Queue<OverlapPoint> pointQueue, int plateIndex)
+        private static void FindPlateBorders(List<KeyPoint> iPlatePoints, Queue<OverlapPoint> pointQueue, int plateIndex)
         {
             for (int i = 0; i < iPlatePoints.Count; i++)
             {
@@ -273,9 +273,9 @@ namespace Resource_Generator
         /// </summary>
         /// <param name="oldPlateList">Old plate, if it exists.</param>
         /// <returns>True if successful, otherwise false.</returns>
-        private static bool FindReplaceablePlate(out List<SimplePoint> oldPlateList)
+        private static bool FindReplaceablePlate(out List<KeyPoint> oldPlateList)
         {
-            foreach (List<SimplePoint> pointList in platePoints)
+            foreach (List<KeyPoint> pointList in platePoints)
             {
                 if (pointList.Count == 0)
                 {
@@ -283,7 +283,7 @@ namespace Resource_Generator
                     return true;
                 }
             }
-            foreach (List<SimplePoint> pointList in platePoints)
+            foreach (List<KeyPoint> pointList in platePoints)
             {
                 if (pointList.Count < temporaryPoints.Count)
                 {
@@ -343,13 +343,13 @@ namespace Resource_Generator
         /// larger than the smallest existing plate.
         /// </summary>
         /// <param name="inPoint">Starting Point.</param>
-        private static void PlateMaker(SimplePoint inPoint)
+        private static void PlateMaker(KeyPoint inPoint)
         {
-            temporaryPoints = new List<SimplePoint>();
+            temporaryPoints = new List<KeyPoint>();
             if (pointActives[inPoint.X, inPoint.Y])
             {
                 FindContiguousPoints(inPoint);
-                if (FindReplaceablePlate(out List<SimplePoint> oldPlateList))
+                if (FindReplaceablePlate(out List<KeyPoint> oldPlateList))
                 {
                     ReplacePlate(oldPlateList);
                 }
@@ -370,13 +370,13 @@ namespace Resource_Generator
                 {
                     if (pointActives[x, y])
                     {
-                        PlateMaker(new SimplePoint(x, y));
+                        PlateMaker(new KeyPoint(x, y));
                     }
                 }
             }
             Parallel.For(0, (rules.plateCount), (i) =>
             {
-                foreach (SimplePoint iPoint in platePoints[i])
+                foreach (KeyPoint iPoint in platePoints[i])
                 {
                     pointActives[iPoint.X, iPoint.Y] = true;
                 }
@@ -387,10 +387,10 @@ namespace Resource_Generator
         /// Replaces target plate list with <see cref="temporaryPoints"/>.
         /// </summary>
         /// <param name="targetPlateList">Plate list to replace at.</param>
-        private static void ReplacePlate(List<SimplePoint> targetPlateList)
+        private static void ReplacePlate(List<KeyPoint> targetPlateList)
         {
             targetPlateList.Clear();
-            foreach (SimplePoint iPoint in temporaryPoints)
+            foreach (KeyPoint iPoint in temporaryPoints)
             {
                 targetPlateList.Add(iPoint);
             }

@@ -33,6 +33,11 @@ namespace Resource_Generator
         private static PlatePoint[,] pointHistories;
 
         /// <summary>
+        /// Contains base points for calculating nearest neighbors.
+        /// </summary>
+        private static AdjacentPoints[,] nearPoints;
+
+        /// <summary>
         /// Rules that define plate movement.
         /// </summary>
         private static MoveRules rules;
@@ -74,6 +79,7 @@ namespace Resource_Generator
             pointHistories = new PlatePoint[2 * rules.xHalfSize, rules.ySize];
             newContinentalCollision = new int[2 * rules.xHalfSize, rules.ySize];
             newOceanicCollision = new int[2 * rules.xHalfSize, rules.ySize];
+            nearPoints = new AdjacentPoints[2 * rules.xHalfSize, rules.ySize];
             plates = new Plate[rules.plateCount];
             for (int i = 0; i < rules.plateCount; i++)
             {
@@ -159,7 +165,7 @@ namespace Resource_Generator
             {
                 for (int j = 0; j < plates[i].PlatePoints.Count; j++)
                 {
-                    var newPoints = plates[i].PlatePoints[j].FindNeighborPoints();
+                    var newPoints = nearPoints[plates[i].PlatePoints[j].X, plates[i].PlatePoints[j].Y].Points;
                     for (int k = 0; k < 4; k++)
                     {
                         if (!pointActives[newPoints[k].X, newPoints[k].Y])
@@ -176,7 +182,7 @@ namespace Resource_Generator
                 {
                     pointActives[borderPoint.X, borderPoint.Y] = true;
                     plates[borderPoint.plateIndex[0]].PlatePoints.Add(new PlatePoint(borderPoint, rules.currentTime));
-                    var newPointsP = borderPoint.FindNeighborPoints();
+                    var newPointsP = nearPoints[borderPoint.X, borderPoint.Y].Points;
                     for (int k = 0; k < 4; k++)
                     {
                         if (!pointActives[newPointsP[k].X, newPointsP[k].Y])
@@ -223,9 +229,9 @@ namespace Resource_Generator
         /// <returns>List of neighboring points around target point.</returns>
         private static List<PlatePoint> FindNeighborPlatePoints(int inPlate, IPoint targetPoint)
         {
-            var potentialNeighbors = targetPoint.FindNeighborPoints();
+            var potentialNeighbors = nearPoints[targetPoint.X, targetPoint.Y].Points;
             var pointList = new List<PlatePoint>();
-            foreach (SimplePoint iPoint in potentialNeighbors)
+            foreach (KeyPoint iPoint in potentialNeighbors)
             {
                 if (pointHistories[iPoint.X, iPoint.Y].PlateNumber == inPlate)
                 {
@@ -270,10 +276,10 @@ namespace Resource_Generator
                 for (int j = 0; j < previousPointCount; j++)
                 {
                     var point = plates[i].PlatePoints[j];
-                    if (point.Transform(angle, out List<SimplePoint> bonusPoints, rules.ySize))
+                    if (point.Transform(angle, out List<KeyPoint> bonusPoints, rules.ySize))
                     {
                         var Rangle = new double[3] { angle[0], angle[1], -1 * angle[2] };
-                        foreach (SimplePoint bonusPoint in bonusPoints)
+                        foreach (KeyPoint bonusPoint in bonusPoints)
                         {
                             plates[i].PlatePoints.Add(InterlacePlatePoint(i, bonusPoint, Rangle));
                         }
@@ -290,7 +296,7 @@ namespace Resource_Generator
         /// <param name="inPlate">Index of plate to scan for with <see cref="pointPastPlates"/>.</param>
         /// <param name="angle">Angle to reverse trace with.</param>
         /// <returns>Average of nearby points from <see cref="PastHeights"/>.</returns>
-        private static PlatePoint InterlacePlatePoint(int inPlate, SimplePoint newPoint, double[] angle)
+        private static PlatePoint InterlacePlatePoint(int inPlate, KeyPoint newPoint, double[] angle)
         {
             var oldPoint = new BasePoint((new BasePoint(newPoint)).Transform(angle));
             oldPoint.GridTransform(angle, out double xCoord, out double yCoord);
@@ -352,6 +358,7 @@ namespace Resource_Generator
                 foreach (PlatePoint iPoint in plates[i].PlatePoints)
                 {
                     pointHistories[iPoint.X, iPoint.Y] = iPoint;
+                    nearPoints[iPoint.X, iPoint.Y] = new AdjacentPoints(iPoint.X, iPoint.Y);
                 }
             });
         }
@@ -372,7 +379,7 @@ namespace Resource_Generator
             {
                 for (int x = 0; x < 2 * rules.xHalfSize; x++)
                 {
-                    var targetPoint = new PlatePoint(new SimplePoint(x, y));
+                    var targetPoint = new PlatePoint(new KeyPoint(x, y));
                     var points = FindPoints(targetPoint, index);
                     if (points.Count == 1)
                     {
@@ -458,7 +465,7 @@ namespace Resource_Generator
                 var reversedPoint = input.Transform(angle);
                 if (pointHistories[reversedPoint.X, reversedPoint.Y].PlateNumber == i)
                 {
-                    plates[i].PlatePoints.Add(InterlacePlatePoint(i, new SimplePoint(input.X, input.Y), angle));
+                    plates[i].PlatePoints.Add(InterlacePlatePoint(i, new KeyPoint(input.X, input.Y), angle));
                     pointActives[input.X, input.Y] = true;
                 }
             }

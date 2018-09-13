@@ -143,7 +143,7 @@ namespace Resource_Generator
             {
                 for (int y = 0; y < rules.ySize; y++)
                 {
-                    var nearPoints = point[x, y].FindNeighborPoints();
+                    var nearPoints = point[x, y].Near.Points;
                     var leftHeight = pressureMap[nearPoints[2].X, nearPoints[2].Y];
                     var rightHeight = pressureMap[nearPoints[3].X, nearPoints[3].Y];
                     var aboveHeight = pressureMap[nearPoints[0].X, nearPoints[0].Y];
@@ -216,7 +216,7 @@ namespace Resource_Generator
                 {
                     for (int y = 0; y < rules.ySize; y++)
                     {
-                        var nearPoints = point[x, y].FindNeighborPoints();
+                        var nearPoints = point[x, y].Near.Points;
                         for (int j = 0; j < 4; j++)
                         {
                             tempRainfallTwo[nearPoints[j].X, nearPoints[j].Y] = windMap[x, y, 0] * tempRainfallOne[x, y];
@@ -247,7 +247,7 @@ namespace Resource_Generator
                     for (int y = 0; y < rules.ySize; y++)
                     {
                         output[x, y] = 0.6 * tempInput[x, y];
-                        var nearPoints = point[x, y].FindNeighborPoints();
+                        var nearPoints = point[x, y].Near.Points;
                         for (int j = 0; j < 4; j++)
                         {
                             output[x, y] = 0.1 * tempInput[nearPoints[j].X, nearPoints[j].Y];

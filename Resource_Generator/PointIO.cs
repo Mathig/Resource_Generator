@@ -230,8 +230,8 @@ namespace Resource_Generator
                 {
                     for (int y = 0; y < rules.ySize; y++)
                     {
-                        var point = new SimplePoint(x, y);
-                        var birthPoint = new SimplePoint(xBirthPlace[x, y], yBirthPlace[x, y]);
+                        var point = new KeyPoint(x, y);
+                        var birthPoint = new KeyPoint(xBirthPlace[x, y], yBirthPlace[x, y]);
                         var history = new BoundaryHistory(continentalBuildup[x, y], continentalRecency[x, y], oceanicBuildup[x, y], oceanicRecency[x, y]);
                         pointData[x, y] = new PlatePoint(point, birthPoint, birthTime[x, y], plateNumbers[x, y], history, isContinental[x, y]);
                     }

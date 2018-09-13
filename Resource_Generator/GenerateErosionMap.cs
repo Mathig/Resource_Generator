@@ -18,7 +18,7 @@ namespace Resource_Generator
         /// <summary>
         /// List of points which are part of a lake.
         /// </summary>
-        private static List<SimplePoint> lakePoints;
+        private static List<KeyPoint> lakePoints;
 
         /// <summary>
         /// Points used for calculations.
@@ -54,9 +54,9 @@ namespace Resource_Generator
         /// Adjusts height for given point to enable lake formation.
         /// </summary>
         /// <param name="iPoint">Point to adjust.</param>
-        private static void AdjustPointAltitude(SimplePoint iPoint)
+        private static void AdjustPointAltitude(KeyPoint iPoint)
         {
-            if (!FindLowestNeighbor(iPoint, out SimplePoint outPoint))
+            if (!FindLowestNeighbor(iPoint, out KeyPoint outPoint))
             {
                 if (waterContained[iPoint.X, iPoint.Y] > rules.waterThreshold * points[iPoint.X, iPoint.Y]._sinPhi)
                 {
@@ -113,13 +113,13 @@ namespace Resource_Generator
         /// </summary>
         /// <param name="iPoint">Point to consider.</param>
         /// <returns>Amount of water flow.</returns>
-        private static double CalculateWaterFlow(SimplePoint iPoint)
+        private static double CalculateWaterFlow(KeyPoint iPoint)
         {
             var water = rainWater[iPoint.X, iPoint.Y];
-            var nearPoints = iPoint.FindNeighborPoints();
+            var nearPoints = points[iPoint.X, iPoint.Y].Near.Points;
             for (int i = 0; i < nearPoints.Length; i++)
             {
-                if (FindLowestNeighbor(nearPoints[i], out SimplePoint testPoint))
+                if (FindLowestNeighbor(nearPoints[i], out KeyPoint testPoint))
                 {
                     if (iPoint.CompareTo(testPoint) == 0)
                     {
@@ -179,7 +179,7 @@ namespace Resource_Generator
             points = new BasePoint[2 * rules.xHalfSize, rules.ySize];
             waterFlow = new double[2 * rules.xHalfSize, rules.ySize];
             waterArea = new double[2 * rules.xHalfSize, rules.ySize];
-            lakePoints = new List<SimplePoint>();
+            lakePoints = new List<KeyPoint>();
             for (int x = 0; x < 2 * rules.xHalfSize; x++)
             {
                 for (int y = 0; y < rules.ySize; y++)
@@ -195,12 +195,12 @@ namespace Resource_Generator
         /// <param name="inPoint">Input point to search around.</param>
         /// <param name="outPoint">Point of lowest altitude.</param>
         /// <returns>True if center point is not lowest, otherwise false.</returns>
-        private static bool FindLowestNeighbor(SimplePoint inPoint, out SimplePoint outPoint)
+        private static bool FindLowestNeighbor(KeyPoint inPoint, out KeyPoint outPoint)
         {
             outPoint = inPoint;
             var notCenter = false;
             var lowestHeight = heightMap[inPoint.X, inPoint.Y];
-            var neighborPoints = inPoint.FindNeighborPoints();
+            var neighborPoints = points[inPoint.X, inPoint.Y].Near.Points;
             for (int i = 0; i < neighborPoints.Length; i++)
             {
                 if (heightMap[neighborPoints[i].X, neighborPoints[i].Y] < lowestHeight)
@@ -277,7 +277,7 @@ namespace Resource_Generator
             }
             listPoints.Sort();
             listPoints.Reverse();
-            var explodingPoints = new Queue<SimplePoint>();
+            var explodingPoints = new Queue<KeyPoint>();
             for (int i = 0; i < listPoints.Count; i++)
             {
                 var newPoint = WaterPointFlow(listPoints[i].X, listPoints[i].Y);
@@ -301,10 +301,10 @@ namespace Resource_Generator
         /// <param name="x">X coordinate of point.</param>
         /// <param name="y">Y coordinate of point.</param>
         /// <returns>Destination for water flow.</returns>
-        private static SimplePoint WaterPointFlow(int x, int y)
+        private static KeyPoint WaterPointFlow(int x, int y)
         {
-            var point = new SimplePoint(x, y);
-            if (FindLowestNeighbor(point, out SimplePoint destinationPoint))
+            var point = new KeyPoint(x, y);
+            if (FindLowestNeighbor(point, out KeyPoint destinationPoint))
             {
                 waterContained[destinationPoint.X, destinationPoint.Y] += waterContained[point.X, point.Y];
                 if (waterFlow[point.X, point.Y] == 0)
@@ -344,7 +344,7 @@ namespace Resource_Generator
             }
             listPoints.Sort();
             listPoints.Reverse();
-            var explodingPoints = new Queue<SimplePoint>();
+            var explodingPoints = new Queue<KeyPoint>();
             for (int i = 0; i < listPoints.Count; i++)
             {
                 var newPoint = WaterPointFlow(listPoints[i].X, listPoints[i].Y);

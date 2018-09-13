@@ -11,7 +11,7 @@ namespace Resource_Generator
         /// <summary>
         /// Stores the location of this point.
         /// </summary>
-        private readonly SimplePoint _position;
+        private readonly KeyPoint _position;
 
         /// <summary>
         /// Contains indexes for which points are continental.
@@ -29,7 +29,7 @@ namespace Resource_Generator
         /// <param name="iPoint">Input Point.</param>
         public OverlapPoint(PlatePoint iPoint)
         {
-            _position = new SimplePoint(iPoint.X, iPoint.Y);
+            _position = new KeyPoint(iPoint.X, iPoint.Y);
             plateIndex = new List<int>();
             isContinentalIndex = new List<bool>();
             plateIndex.Add(iPoint.PlateNumber);
@@ -41,7 +41,7 @@ namespace Resource_Generator
         /// </summary>
         /// <param name="inPoint">Coordinates of point.</param>
         /// <param name="inPlateIndex">First index for plate index.</param>
-        public OverlapPoint(SimplePoint inPoint, int inPlateIndex)
+        public OverlapPoint(KeyPoint inPoint, int inPlateIndex)
         {
             plateIndex = new List<int>();
             _position = inPoint;
@@ -49,26 +49,14 @@ namespace Resource_Generator
         }
 
         /// <summary>
-        /// Opens <see cref="SimplePoint.X"/> to access through X.
+        /// Opens <see cref="KeyPoint.X"/> to access through X.
         /// </summary>
-        public int X
-        {
-            get
-            {
-                return _position.X;
-            }
-        }
+        public int X => _position.X;
 
         /// <summary>
-        /// Opens <see cref="SimplePoint.Y"/> to access through Y.
+        /// Opens <see cref="KeyPoint.Y"/> to access through Y.
         /// </summary>
-        public int Y
-        {
-            get
-            {
-                return _position.Y;
-            }
-        }
+        public int Y => _position.Y;
 
         /// <summary>
         /// Compares two BasePoints using the SimplePoint structure.
@@ -90,15 +78,6 @@ namespace Resource_Generator
             {
                 throw new ArgumentException("Object is not an Overlap Point.");
             }
-        }
-
-        /// <summary>
-        /// Returns neighboring points in an array ordered as above, below, left, then right.
-        /// </summary>
-        /// <returns>Neighbor points.</returns>
-        public SimplePoint[] FindNeighborPoints()
-        {
-            return _position.FindNeighborPoints();
         }
 
         /// <summary>
