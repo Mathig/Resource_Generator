@@ -7,24 +7,20 @@ namespace Resource_Generator
     /// <summary>
     /// Holds rules for how erosion will work.
     /// </summary>
-    [XmlRootAttribute(IsNullable = false)]
+    [XmlRoot("Erosion_Map_Rules", IsNullable = false)]
     public class ErosionMapRules : GeneralRules
     {
         /// <summary>
         /// How many seasons exist for rain.
         /// </summary>
+        [XmlElement("Number_of_Seasons")]
         public int numberSeasons;
 
         /// <summary>
         /// How much water before a point becomes a lake.
         /// </summary>
+        [XmlElement("Water_Threshold")]
         public double waterThreshold;
-
-        /// <summary>
-        /// Returns name of class in string form.
-        /// </summary>
-        public const string ClassName = "ErosionMapRules";
-
 
         /// <summary>
         /// Checks the rules to confirm they are valid.
@@ -34,19 +30,29 @@ namespace Resource_Generator
         {
             try
             {
-                if (this.xHalfSize < 1 || this.ySize < 1 || this.plateCount < 1)
+                if (xHalfSize < 1 || ySize < 1 || plateCount < 1)
                 {
-                    throw new InvalidDataException(ClassName + " file has invalid values.");
+                    throw new InvalidDataException(nameof(ErosionMapRules) + " file has invalid values.");
                 }
-                if (this.numberSeasons < 1)
+                if (numberSeasons < 1)
                 {
-                    throw new InvalidDataException(ClassName + " file has invalid values.");
+                    throw new InvalidDataException(nameof(ErosionMapRules) + " file has invalid values.");
                 }
             }
             catch (NullReferenceException e)
             {
-                throw new InvalidDataException(ClassName + " file is missing values.", e);
+                throw new InvalidDataException(nameof(ErosionMapRules) + " file is missing values.", e);
             }
+        }
+
+        /// <summary>
+        /// Generates default values for class.
+        /// </summary>
+        public new void Default()
+        {
+            base.Default();
+            numberSeasons = 4;
+            waterThreshold = 0.1;
         }
     }
 }

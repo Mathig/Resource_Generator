@@ -7,30 +7,26 @@ namespace Resource_Generator
     /// <summary>
     /// Contains rules for Plate Movement.
     /// </summary>
-    [XmlRootAttribute(IsNullable = false)]
+    [XmlRoot("Move_Rules", IsNullable = false)]
     public class MoveRules : GeneralRules
     {
         /// <summary>
         /// How many time steps to take.
         /// </summary>
+        [XmlElement("Number_of_Steps")]
         public int numberSteps;
 
         /// <summary>
         /// How much to scale heights when overlapping.
         /// </summary>
+        [XmlElement("Overlap_Factor")]
         public double OverlapFactor;
 
         /// <summary>
         /// Multiplier for how much to move each plate.
         /// </summary>
+        [XmlElement("Time_Step")]
         public int timeStep;
-
-        /// <summary>
-        /// Returns name of class in string form.
-        /// </summary>
-        /// <returns>Name of class.</returns>
-        public const string ClassName = "MoveRules";
-
 
         /// <summary>
         /// Checks the rules to confirm they are valid.
@@ -40,19 +36,30 @@ namespace Resource_Generator
         {
             try
             {
-                if (this.xHalfSize < 1 || this.ySize < 1 || this.plateCount < 1)
+                if (xHalfSize < 1 || ySize < 1 || plateCount < 1)
                 {
-                    throw new InvalidDataException(ClassName + " file has invalid values.");
+                    throw new InvalidDataException(nameof(MoveRules) + " file has invalid values.");
                 }
-                if (this.timeStep == 0)
+                if (timeStep == 0)
                 {
-                    throw new InvalidDataException(ClassName + " file has invalid values.");
+                    throw new InvalidDataException(nameof(MoveRules) + " file has invalid values.");
                 }
             }
             catch (NullReferenceException e)
             {
-                throw new InvalidDataException(ClassName + " file is missing values.", e);
+                throw new InvalidDataException(nameof(MoveRules) + " file is missing values.", e);
             }
+        }
+
+        /// <summary>
+        /// Generates default values for class.
+        /// </summary>
+        public new void Default()
+        {
+            base.Default();
+            numberSteps = 10;
+            OverlapFactor = 0.6;
+            timeStep = 1;
         }
     }
 }

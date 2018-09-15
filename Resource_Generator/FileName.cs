@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 
 namespace Resource_Generator
 {
@@ -18,12 +19,13 @@ namespace Resource_Generator
         public static string directory;
 
         /// <summary>
-        /// Constructor
+        /// Constructor that checks to make sure the name is valid.
         /// </summary>
         /// <param name="inName">See <see cref="_name"/>.</param>
         public FileName(string inName)
         {
             _name = inName;
+            CheckValidity();
         }
 
         /// <summary>
@@ -38,7 +40,7 @@ namespace Resource_Generator
         }
 
         /// <summary>
-        /// Tests if the string fulfills strict requirements for a file name.
+        /// Tests if the string requirements for a file name.
         /// </summary>
         /// <returns>True if valid, false otherwise.</returns>
         /// <exception cref="FormatException">Yields exception if the file name is invalid.</exception>
@@ -46,9 +48,19 @@ namespace Resource_Generator
         {
             foreach (char iChar in _name)
             {
-                if (!(Char.IsLetterOrDigit(iChar) || iChar.Equals('_')))
+                if (!Char.IsLetterOrDigit(iChar))
                 {
-                    throw new FormatException("File name is invalid. ");
+                    if (iChar == '.')
+                    {
+                        throw new FormatException("File names can not include extensions or periods.");
+                    }
+                    foreach (char jChar in Path.GetInvalidFileNameChars())
+                    {
+                        if (iChar == jChar)
+                        {
+                            throw new FormatException("File name contains invalid character: " + jChar);
+                        }
+                    }
                 }
             }
         }

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.IO;
-using System.Xml.Serialization;
 
 namespace Resource_Generator
 {
@@ -70,15 +69,15 @@ namespace Resource_Generator
         /// <param name="coreDirectory">Location to store directory location.</param>
         /// <param name="directory">Location of directory.</param>
         /// <returns>True if successful, false otherwise.</returns>
-        private static bool TryToCreateDefaultDirectory(string coreDirectory, out string directory)
+        private static bool CreateDefaultDirectory(string coreDirectory, out string directory)
         {
-            directory = "";
             try
             {
                 directory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
             }
             catch (PlatformNotSupportedException)
             {
+                directory = "";
                 Console.WriteLine("Platform not supported for accessing MyDocuments.");
                 SuggestManualCreation(coreDirectory);
                 return false;
@@ -102,7 +101,7 @@ namespace Resource_Generator
             }
             if (Test(directory))
             {
-                GenerateDefaultFiles(directory);
+                DefaultFiles.Create(directory);
                 Save(coreDirectory, directory);
                 Console.WriteLine("Directory created at: \"" + directory + "\".");
                 return true;
@@ -121,116 +120,6 @@ namespace Resource_Generator
         {
             directory = Directory.GetCurrentDirectory();
             return Test(directory);
-        }
-
-        /// <summary>
-        /// Generates default setting files in directory.
-        /// </summary>
-        /// <param name="directory">Directory to use for creating new files.</param>
-        public static void GenerateDefaultFiles(string directory)
-        {
-            var altitudeMapRules = new AltitudeMapRules
-            {
-                currentTime = 0,
-                maxBuildup = 0,
-                plateCount = 10,
-                xHalfSize = 1000,
-                ySize = 1000
-            };
-            using (StreamWriter file = new StreamWriter(directory + "\\GenerateAltitudeRules.xml", false))
-            {
-                var serializer = new XmlSerializer(typeof(AltitudeMapRules));
-                serializer.Serialize(file, altitudeMapRules);
-            }
-
-            var erosionMapRules = new ErosionMapRules
-            {
-                currentTime = 0,
-                maxBuildup = 0,
-                plateCount = 10,
-                xHalfSize = 1000,
-                ySize = 1000,
-                numberSeasons = 4,
-                waterThreshold = 0.1
-            };
-            using (StreamWriter file = new StreamWriter(directory + "\\GenerateErosionRules.xml", false))
-            {
-                var serializer = new XmlSerializer(typeof(ErosionMapRules));
-                serializer.Serialize(file, erosionMapRules);
-            }
-
-            var generateRules = new GenerateRules
-            {
-                currentTime = 0,
-                maxBuildup = 0,
-                plateCount = 10,
-                xHalfSize = 1000,
-                ySize = 1000,
-                cutOff = 1000 * 1000 * 3 / 2,
-                magnitude = new double[10],
-                pointConcentration = new double[10],
-                radius = new double[10]
-            };
-            for (int i = 0; i < 10; i++)
-            {
-                generateRules.magnitude[i] = 16 - i;
-                generateRules.pointConcentration[i] = 0.999;
-                generateRules.radius[i] = Math.Round(Math.Sin(Math.PI * (12 - i) / 120), 2);
-            }
-            using (StreamWriter file = new StreamWriter(directory + "\\GenerationRules.xml", false))
-            {
-                var serializer = new XmlSerializer(typeof(GenerateRules));
-                serializer.Serialize(file, generateRules);
-            }
-
-            var moveRules = new MoveRules
-            {
-                currentTime = 0,
-                maxBuildup = 0,
-                plateCount = 10,
-                xHalfSize = 1000,
-                ySize = 1000,
-                OverlapFactor = 0.6,
-                timeStep = 1,
-                numberSteps = 10
-            };
-            using (StreamWriter file = new StreamWriter(directory + "\\MoveRules.xml", false))
-            {
-                var serializer = new XmlSerializer(typeof(MoveRules));
-                serializer.Serialize(file, moveRules);
-            }
-            var rainfallMapRules = new RainfallMapRules
-            {
-                currentTime = 0,
-                maxBuildup = 0,
-                plateCount = 10,
-                xHalfSize = 1000,
-                ySize = 1000,
-                altitudeWeight = 0.001,
-                axisTilt = 10,
-                numberSeasons = 4,
-                oceanWeight = 0.125,
-                landWeight = 5
-            };
-            using (StreamWriter file = new StreamWriter(directory + "\\PlateData.xml", false))
-            {
-                var serializer = new XmlSerializer(typeof(RainfallMapRules));
-                serializer.Serialize(file, rainfallMapRules);
-            }
-            var plateData = new PlateData
-            {
-                Direction = new double[10][],
-                Speed = new double[10]
-            };
-            for (int i = 0; i < 10; i++)
-            {
-                plateData.Direction[i] = new double[2];
-                var angleOne = i * Math.PI / 4.5;
-                angleOne = Math.Round(angleOne, 3);
-                plateData.Speed[i] = 0.02;
-                plateData.Direction[i][0] = angleOne;
-                plateData.Direction[i][1] = angleOne;
-            }
         }
 
         /// <summary>
@@ -253,7 +142,7 @@ namespace Resource_Generator
         /// <returns>True if successful, false otherwise.</returns>
         public static bool Setup(out string directory)
         {
-            directory = "";
+            /// Directory storying directory location.
             var coreDirectory = "";
             try
             {
@@ -261,6 +150,7 @@ namespace Resource_Generator
             }
             catch (Exception e) when (e is ArgumentException || e is IOException || e is UnauthorizedAccessException)
             {
+                directory = "";
                 Console.WriteLine("Failed to access core directory.");
                 return false;
             }
@@ -276,7 +166,7 @@ namespace Resource_Generator
                     Console.WriteLine("Directory found at: \"" + directory + "\" is invalid. Creating new directory.");
                 }
             }
-            return TryToCreateDefaultDirectory(coreDirectory, out directory);
+            return CreateDefaultDirectory(coreDirectory, out directory);
         }
 
         /// <summary>

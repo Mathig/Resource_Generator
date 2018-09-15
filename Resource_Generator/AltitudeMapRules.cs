@@ -7,14 +7,9 @@ namespace Resource_Generator
     /// <summary>
     /// Rules for generating altitude map.
     /// </summary>
-    [XmlRootAttribute(IsNullable = false)]
+    [XmlRoot("Altitude_Map_Rules", IsNullable = false)]
     public class AltitudeMapRules : GeneralRules
     {
-        /// <summary>
-        /// Returns name of class in string form.
-        /// </summary>
-        public const string ClassName = "AltitudeMapRules";
-
         /// <summary>
         /// Checks the rules to confirm they are valid.
         /// </summary>
@@ -23,16 +18,23 @@ namespace Resource_Generator
         {
             try
             {
-                if (this.xHalfSize < 1 || this.ySize < 1 || this.plateCount < 1)
+                if (xHalfSize < 1 || ySize < 1 || plateCount < 1)
                 {
-                    throw new InvalidDataException(ClassName + " file has invalid values.");
+                    throw new InvalidDataException(nameof(AltitudeMapRules) + " file has invalid values.");
                 }
             }
             catch (NullReferenceException e)
             {
-                throw new InvalidDataException(ClassName + " file is missing values.", e);
+                throw new InvalidDataException(nameof(AltitudeMapRules) + " file is missing values.", e);
             }
         }
 
+        /// <summary>
+        /// Generates default values for class.
+        /// </summary>
+        public new void Default()
+        {
+            base.Default();
+        }
     }
 }

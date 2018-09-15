@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 
 namespace Resource_Generator
@@ -9,34 +10,25 @@ namespace Resource_Generator
     internal static class CommandController
     {
         /// <summary>
-        /// Describes the criteria for a valid file name, according to our custom definition.
+        /// Dictionary for command names from string to action.
         /// </summary>
-        private const string validFileNameCriteria = "Use only alpha-numeric or _.";
-
-        /// <summary>
-        /// Directory for file processing.
-        /// </summary>
-        private static string _directory;
+        private static Dictionary<string, Action> commandList;
 
         /// <summary>
         /// Processes commands and handles errors.
         /// </summary>
         private static void CommandProcessing()
         {
-            var closeProgram = false;
-            while (!closeProgram)
+            while (true)
             {
-                var newCommand = Console.ReadLine();
                 try
                 {
-                    closeProgram = !RunCommand(newCommand);
+                    if (!RunCommand(Console.ReadLine()))
+                    {
+                        break;
+                    }
                 }
-                catch (FormatException e)
-                {
-                    Console.WriteLine(e.Message);
-                    Console.WriteLine(validFileNameCriteria);
-                }
-                catch (SystemException e) when (e is FileNotFoundException || e is InvalidDataException)
+                catch (SystemException e) when (e is FormatException || e is FileNotFoundException || e is InvalidDataException)
                 {
                     Console.WriteLine(e.Message);
                 }
@@ -62,11 +54,29 @@ namespace Resource_Generator
             var rulesLocation = InputFileName("Generate Height Rules");
             var inDataLocation = InputFileName("Point Data");
             var outDataLocation = InputFileName("Height Data");
-            var rules = (AltitudeMapRules)RulesInput.LoadRules(rulesLocation.Name, AltitudeMapRules.ClassName);
+            var rules = (AltitudeMapRules)RulesIO.Load(rulesLocation.Name, nameof(AltitudeMapRules));
             var inPointData = PointIO.OpenPointData(inDataLocation.Name, rules);
             var heightMap = GenerateAltitudeMap.Run(inPointData, rules);
             PointIO.SaveHeightImage(outDataLocation.Name, heightMap);
             PointIO.SaveMapData(outDataLocation.Name + ".bin", heightMap);
+        }
+
+        /// <summary>
+        /// Generates list of commands.
+        /// </summary>
+        private static void GenerateCommandList()
+        {
+            commandList = new Dictionary<string, Action>
+            {
+                { "Erode Plates", () => GenerateErosion() },
+                { "Copy Plates", () => CopyPlates() },
+                { "Generate Plates", () => GeneratePlates() },
+                { "Generate Rainfall Map", () => GenerateRainfall() },
+                { "Generate Altitude Map", () => GenerateAltitudes() },
+                { "Move Plates", () => MovePlates() },
+                { "Help", () => Help() },
+                { "Move Directory", () => MoveDirectory() }
+            };
         }
 
         /// <summary>
@@ -79,7 +89,7 @@ namespace Resource_Generator
             var inRainLocation = InputFileName("Rainfall Data");
             var outErosionLocation = InputFileName("Erosion Data");
             var outIsWaterLocation = InputFileName("Is Water Data");
-            var rules = (ErosionMapRules)RulesInput.LoadRules(rulesLocation.Name,ErosionMapRules.ClassName);
+            var rules = (ErosionMapRules)RulesIO.Load(rulesLocation.Name, nameof(ErosionMapRules));
             var heightMap = PointIO.OpenDoubleData(inHeightLocation.Name + ".bin", 2 * rules.xHalfSize, rules.ySize);
             var rainfallMap = new double[2 * rules.xHalfSize, rules.ySize];
             for (int i = 0; i < rules.numberSeasons; i++)
@@ -107,11 +117,10 @@ namespace Resource_Generator
             var rulesLocation = InputFileName("Generate Rules");
             var outDataLocation = InputFileName("Point Data");
             var outImageLocation = InputFileName("Point Image");
-            var rules = (GenerateRules)RulesInput.LoadRules(rulesLocation.Name, GenerateRules.ClassName);
+            var rules = (GenerateRules)RulesIO.Load(rulesLocation.Name, nameof(GenerateRules));
             var pointData = GeneratePlateData.Run(rules);
             PointIO.SavePointData(outDataLocation.Name, rules, pointData);
             PointIO.SavePointImage(outImageLocation.Name, rules, pointData);
-            GC.Collect();
         }
 
         /// <summary>
@@ -122,7 +131,7 @@ namespace Resource_Generator
             var rulesLocation = InputFileName("Rainfall Rules");
             var inDataLocation = InputFileName("Height Map Data");
             var outDataLocation = InputFileName("Rainfall Data");
-            var rules = (RainfallMapRules)RulesInput.LoadRules(rulesLocation.Name, RainfallMapRules.ClassName);
+            var rules = (RainfallMapRules)RulesIO.Load(rulesLocation.Name, nameof(RainfallMapRules));
             var heightMap = PointIO.OpenDoubleData(inDataLocation.Name + ".bin", 2 * rules.xHalfSize, rules.ySize);
             var rainfallMap = GenerateRainfallMap.Run(heightMap, rules);
             for (int i = 0; i < rainfallMap.GetLength(2); i++)
@@ -146,14 +155,14 @@ namespace Resource_Generator
         private static void Help()
         {
             Console.WriteLine("Possible commands include:");
-            Console.WriteLine("Erode Plates: Erodes plates.");
             Console.WriteLine("Help: Lists possible commands.");
-            Console.WriteLine("Copy Plates: Converts an image file of data to a binary data file.");
             Console.WriteLine("Move Directory: Moves the directory.");
-            Console.WriteLine("Move Plates: Moves the Plates.");
-            Console.WriteLine("Generate Rainfall Map: Generates Rainfall Map.");
             Console.WriteLine("Generate Plates: Generates the Plates");
+            Console.WriteLine("Copy Plates: Converts an image file of data to a binary data file.");
+            Console.WriteLine("Move Plates: Moves the Plates.");
             Console.WriteLine("Generate Altitude Map: Generates altitude map.");
+            Console.WriteLine("Generate Rainfall Map: Generates Rainfall Map.");
+            Console.WriteLine("Erode Plates: Erodes plates.");
             Console.WriteLine("Close: Closes Program.");
         }
 
@@ -166,9 +175,7 @@ namespace Resource_Generator
         private static FileName InputFileName(string nameDescriptor)
         {
             Console.WriteLine("Input " + nameDescriptor + " file name.");
-            var fileName = new FileName(Console.ReadLine());
-            fileName.CheckValidity();
-            return fileName;
+            return new FileName(Console.ReadLine());
         }
 
         /// <summary>
@@ -182,11 +189,10 @@ namespace Resource_Generator
             if (DirectoryManager.Test(tempDirectory))
             {
                 DirectoryManager.CoreDirectory(out string coreDirectory);
-                DirectoryManager.GenerateDefaultFiles(tempDirectory);
                 DirectoryManager.Save(coreDirectory, tempDirectory);
-                _directory = tempDirectory;
-                FileName.directory = _directory;
-                Console.WriteLine("Directory successfully moved to: " + _directory);
+                DefaultFiles.Create(tempDirectory);
+                FileName.directory = tempDirectory;
+                Console.WriteLine("Directory successfully moved to: " + tempDirectory);
             }
             else
             {
@@ -204,8 +210,8 @@ namespace Resource_Generator
             var inPointDataLocation = InputFileName("Source Point Data");
             var outPointDataLocation = InputFileName("Destination Point Data");
             var plateImageLocation = InputFileName("Image");
-            var rules = (MoveRules)RulesInput.LoadRules(rulesLocation.Name, MoveRules.ClassName);
-            var plateData = PlateIO.OpenPlateData(plateDataLocation.Name);
+            var rules = (MoveRules)RulesIO.Load(rulesLocation.Name, nameof(MoveRules));
+            var plateData = PlateIO.Open(plateDataLocation.Name);
             var inPointData = PointIO.OpenPointData(inPointDataLocation.Name, rules);
             var outPointData = MovePlatesData.Run(rules, plateData, inPointData);
             PointIO.SavePointData(outPointDataLocation.Name, rules, outPointData);
@@ -219,59 +225,31 @@ namespace Resource_Generator
         /// <returns>True if successful, otherwise false.</returns>
         private static bool RunCommand(string command)
         {
-            switch (command)
+            if (command == "Close")
             {
-                case "Erode Plates":
-                    GenerateErosion();
-                    break;
-
-                case "Copy Plates":
-                    CopyPlates();
-                    break;
-
-                case "Generate Plates":
-                    GeneratePlates();
-                    break;
-
-                case "Generate Rainfall Map":
-                    GenerateRainfall();
-                    break;
-
-                case "Generate Altitude Map":
-                    GenerateAltitudes();
-                    break;
-
-                case "Move Plates":
-                    MovePlates();
-                    break;
-
-                case "Move Directory":
-                    MoveDirectory();
-                    break;
-
-                case "Help":
-                    Help();
-                    break;
-
-                case "Close":
-                    return false;
-
-                default:
-                    Console.WriteLine("Invalid Command. Use Help to list available commands.");
-                    break;
+                return false;
+            }
+            if (commandList.TryGetValue(command, out Action action))
+            {
+                action();
+            }
+            else
+            {
+                Console.WriteLine("Invalid Command. Use Help to list available commands.");
             }
             return true;
         }
 
         /// <summary>
-        /// Initial entry point. Sets up directory and... then redirects control to <see cref="CommandProcessing"/>.
+        /// Initial entry point. Sets up directory, <see cref="GenerateCommandList"/>, and then
+        /// redirects control to <see cref="CommandProcessing"/>.
         /// </summary>
         public static void Run()
         {
             if (DirectoryManager.Setup(out string directory))
             {
-                _directory = directory;
                 FileName.directory = directory;
+                GenerateCommandList();
                 CommandProcessing();
             }
         }
