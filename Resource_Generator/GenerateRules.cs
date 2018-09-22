@@ -36,6 +36,30 @@ namespace Resource_Generator
         public double[] radius;
 
         /// <summary>
+        /// Concentration of initial dendrites to add.
+        /// </summary>
+        [XmlElement("Initial_Dendrites")]
+        public double InitialDendrites;
+
+        /// <summary>
+        /// How many directions each plate can have.
+        /// </summary>
+        [XmlElement("Dendritic_Direction_Count")]
+        public int DendriteDirectionCount;
+
+        /// <summary>
+        /// How many steps are used at a time for dendrite growth.
+        /// </summary>
+        [XmlElement("Dendritic_Point_Count")]
+        public int DendritePointCount;
+
+        /// <summary>
+        /// How often should new Dendrites be formed.
+        /// </summary>
+        [XmlElement("Dendritic_Step_Threshold")]
+        public double DendriticStepThreshold;
+
+        /// <summary>
         /// Checks the rules to confirm they are valid.
         /// </summary>
         /// <exception cref="InvalidDataException">Some data values are lower than required or missing.</exception>
@@ -58,6 +82,14 @@ namespace Resource_Generator
                 {
                     throw new InvalidDataException(nameof(GeneralRules) + " file has invalid values.");
                 }
+                if (InitialDendrites > 1 || InitialDendrites < 0 || DendriticStepThreshold > 1 || DendriticStepThreshold < 0)
+                {
+                    throw new InvalidDataException(nameof(GeneralRules) + " file has invalid values.");
+                }
+                if (DendriteDirectionCount < 1 || DendritePointCount < 1)
+                {
+                    throw new InvalidDataException(nameof(GeneralRules) + " file has invalid values.");
+                }
             }
             catch (NullReferenceException e)
             {
@@ -75,11 +107,15 @@ namespace Resource_Generator
             magnitude = new double[10];
             pointConcentration = new double[10];
             radius = new double[10];
+            InitialDendrites = 0.9;
+            DendriteDirectionCount = 6;
+            DendritePointCount = 3;
+            DendriticStepThreshold = 0.9;
             for (int i = 0; i < 10; i++)
             {
                 magnitude[i] = 16 - i;
                 pointConcentration[i] = 0.999;
-                radius[i] = Math.Round(Math.Sin(Math.PI * (12 - i) / 120), 2);
+                radius[i] = 0.13 - (double)i/100;
             }
         }
     }

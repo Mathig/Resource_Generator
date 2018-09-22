@@ -3,7 +3,7 @@
 namespace Resource_Generator
 {
     /// <summary>
-    /// Interface to allow points to access their contained key point.
+    /// Interface to allow points to access and sort their contained key point.
     /// </summary>
     public interface IPoint : IComparable
     {

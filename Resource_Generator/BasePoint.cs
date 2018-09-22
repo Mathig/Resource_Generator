@@ -228,17 +228,9 @@ namespace Resource_Generator
             {
                 xDif = 2 * _halfMapXSize - xDif;
             }
-            double cosDif;
-#pragma warning disable CC0014 // Use ternary operator
-            if (xDif < _halfMapXSize / 6)
-#pragma warning restore CC0014 // Use ternary operator
-            {
-                cosDif = 1 - (0.5 * xDif * xDif * _dTheta * _dTheta);
-            }
-            else
-            {
-                cosDif = Math.Cos(xDif * _dTheta);
-            }
+            var cosDif = xDif < _halfMapXSize / 6
+                ? 1 - (0.5 * xDif * xDif * _dTheta * _dTheta)
+                : Math.Cos(xDif * _dTheta);
             return Math.Abs(2 * (1 - _sinPhi * iPoint._sinPhi - _cosPhi * iPoint._cosPhi * cosDif));
         }
 
@@ -255,17 +247,9 @@ namespace Resource_Generator
             {
                 xDif = 2 * _halfMapXSize - xDif;
             }
-            double cosDif;
-#pragma warning disable CC0014 // Use ternary operator
-            if (xDif < _halfMapXSize / 6)
-#pragma warning restore CC0014 // Use ternary operator
-            {
-                cosDif = 1 - (0.5 * xDif * xDif * _dTheta * _dTheta);
-            }
-            else
-            {
-                cosDif = Math.Cos(xDif * _dTheta);
-            }
+            var cosDif = xDif < _halfMapXSize / 6
+                ? 1 - (0.5 * xDif * xDif * _dTheta * _dTheta)
+                : Math.Cos(xDif * _dTheta);
             var otherCosPhi = Math.Cos((yCoord * _dPhi) + _phiShift);
             var otherSinPhi = Math.Sin((yCoord * _dPhi) + _phiShift);
 
@@ -300,12 +284,12 @@ namespace Resource_Generator
         /// <param name="yMax">Maximum Y boundary.</param>
         public void Range(double range, out int xMin, out int xMax, out int yMin, out int yMax)
         {
-            var zMin = ((_sinPhi - range) + 1) / 2;
-            if (zMin < 0)
+            var zMin = _sinPhi - range;
+            if (zMin < -1)
             {
-                zMin = 0;
+                zMin = -1;
             }
-            var zMax = ((_sinPhi + range) + 1) / 2;
+            var zMax = _sinPhi + range;
             if (zMax > 1)
             {
                 zMax = 1;
@@ -322,8 +306,16 @@ namespace Resource_Generator
                 xMin += 2 * _halfMapXSize;
                 xMax += 2 * _halfMapXSize;
             }
-            yMin = (int)Math.Floor(zMin * _mapYSize);
-            yMax = (int)Math.Ceiling(zMax * _mapYSize);
+            yMin = (int)Math.Round((Math.Asin(zMin) - _phiShift) / _dPhi);
+            if (yMin < 0)
+            {
+                yMin = 0;
+            }
+            yMax = (int)Math.Round((Math.Asin(zMax) - _phiShift) / _dPhi);
+            if (yMax >= _mapYSize)
+            {
+                yMax = _mapYSize - 1;
+            }
         }
 
         /// <summary>

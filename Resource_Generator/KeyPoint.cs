@@ -5,7 +5,7 @@ namespace Resource_Generator
     /// <summary>
     /// A point that contains index keys and can be sorted.
     /// </summary>
-    public readonly struct KeyPoint : IPoint
+    public readonly struct KeyPoint : IPoint , IEquatable<KeyPoint>
     {
         /// <summary>
         /// Constructor for point.
@@ -60,6 +60,20 @@ namespace Resource_Generator
         {
             var yComparison = Y.CompareTo(otherPoint.Y);
             return yComparison == 0 ? X.CompareTo(otherPoint.X) : yComparison;
+        }
+
+        /// <summary>
+        /// Interface for comparing whether points are equivalent.
+        /// </summary>
+        /// <param name="other">Other point to compare with.</param>
+        /// <returns>True if equal, otherwise false.</returns>
+        public bool Equals(KeyPoint other)
+        {
+            if (this.X == other.X && this.Y == other.Y)
+            {
+                return true;
+            }
+            return false;
         }
     }
 }

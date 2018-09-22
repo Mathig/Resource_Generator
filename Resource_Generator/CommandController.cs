@@ -28,7 +28,7 @@ namespace Resource_Generator
                         break;
                     }
                 }
-                catch (SystemException e) when (e is FormatException || e is FileNotFoundException || e is InvalidDataException)
+                catch (SystemException e) when (e is FormatException || e is FileNotFoundException || e is InvalidDataException || e is ArgumentException)
                 {
                     Console.WriteLine(e.Message);
                 }
