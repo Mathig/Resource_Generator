@@ -214,11 +214,11 @@ namespace Resource_Generator
         /// <summary>
         /// Grows plates using a dendritic growth model.
         /// </summary>
-        private static void DendriticGrowth()
+        /// <param name="randomNumber">Random number.</param>
+        private static void DendriticGrowth(Random randomNumber)
         {
             DendriticPoint.Setup(rules);
             var DendriticPointArray = new List<DendriticPoint>[rules.plateCount];
-            var randomNumber = new Random();
             for (int i = 0; i < rules.plateCount; i++)
             {
                 DendriticPointArray[i] = SeedDendriticList(i, randomNumber);
@@ -486,16 +486,16 @@ namespace Resource_Generator
         /// <summary>
         /// Generates Noise field.
         /// </summary>
-        private static void NoiseGenerator()
+        /// <param name="randomNumber">Random number for noise generator.</param>
+        private static void NoiseGenerator(Random randomNumber)
         {
             var pointMagnitudes = new double[2 * rules.xHalfSize, rules.ySize];
-            var rnd = new Random();
             for (int i = 0; i < rules.magnitude.Length; i++)
             {
                 var circleList = new List<BasePoint>();
                 foreach (BasePoint iPoint in pointMap)
                 {
-                    if (iPoint.TestMomentum(rnd.NextDouble(), rules.pointConcentration[i]))
+                    if (iPoint.TestMomentum(randomNumber.NextDouble(), rules.pointConcentration[i]))
                     {
                         circleList.Add(iPoint);
                     }
@@ -598,10 +598,11 @@ namespace Resource_Generator
         public static PlatePoint[,] Run(GenerateRules inRules)
         {
             ConstructData(inRules);
-            NoiseGenerator();
+            var randomNumber = new Random(rules.seed);
+            NoiseGenerator(randomNumber);
             NoiseFilter(CutoffMagnitude());
             PlateMaking();
-            DendriticGrowth();
+            DendriticGrowth(randomNumber);
             CleanNonContiguous();
             ExpandPlates();
             PruneData();

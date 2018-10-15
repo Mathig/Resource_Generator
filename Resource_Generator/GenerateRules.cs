@@ -17,6 +17,30 @@ namespace Resource_Generator
         public int cutOff;
 
         /// <summary>
+        /// How many directions each plate can have.
+        /// </summary>
+        [XmlElement("Dendritic_Direction_Count")]
+        public int DendriteDirectionCount;
+
+        /// <summary>
+        /// How many steps are used at a time for dendrite growth.
+        /// </summary>
+        [XmlElement("Dendritic_Point_Count")]
+        public int DendritePointCount;
+
+        /// <summary>
+        /// How often should new Dendrites be formed.
+        /// </summary>
+        [XmlElement("Dendritic_Step_Threshold")]
+        public double DendriticStepThreshold;
+
+        /// <summary>
+        /// Concentration of initial dendrites to add.
+        /// </summary>
+        [XmlElement("Initial_Dendrites")]
+        public double InitialDendrites;
+
+        /// <summary>
         /// Parameters determining weight of each set of circles.
         /// </summary>
         [XmlArray("Magnitude")]
@@ -36,28 +60,10 @@ namespace Resource_Generator
         public double[] radius;
 
         /// <summary>
-        /// Concentration of initial dendrites to add.
+        /// Sets seed for random generation.
         /// </summary>
-        [XmlElement("Initial_Dendrites")]
-        public double InitialDendrites;
-
-        /// <summary>
-        /// How many directions each plate can have.
-        /// </summary>
-        [XmlElement("Dendritic_Direction_Count")]
-        public int DendriteDirectionCount;
-
-        /// <summary>
-        /// How many steps are used at a time for dendrite growth.
-        /// </summary>
-        [XmlElement("Dendritic_Point_Count")]
-        public int DendritePointCount;
-
-        /// <summary>
-        /// How often should new Dendrites be formed.
-        /// </summary>
-        [XmlElement("Dendritic_Step_Threshold")]
-        public double DendriticStepThreshold;
+        [XmlElement("Seed")]
+        public int seed;
 
         /// <summary>
         /// Checks the rules to confirm they are valid.
@@ -103,6 +109,7 @@ namespace Resource_Generator
         public new void Default()
         {
             base.Default();
+            seed = 0;
             cutOff = 1000 * 1000 * 3 / 2;
             magnitude = new double[10];
             pointConcentration = new double[10];
@@ -115,7 +122,7 @@ namespace Resource_Generator
             {
                 magnitude[i] = 16 - i;
                 pointConcentration[i] = 0.999;
-                radius[i] = 0.13 - (double)i/100;
+                radius[i] = 0.13 - (double)i / 100;
             }
         }
     }
